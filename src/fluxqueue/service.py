@@ -35,7 +35,10 @@ def enqueue(session: Session, data: JobCreate, idempotency_key: str | None) -> J
         )
         if existing:
             if existing.payload_fingerprint != digest:
-                raise HTTPException(status_code=409, detail="Idempotency key reused with different request")
+                raise HTTPException(
+                    status_code=409,
+                    detail="Idempotency key reused with different request",
+                )
             return existing
 
     job = Job(
