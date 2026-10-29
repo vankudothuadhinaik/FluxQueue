@@ -16,6 +16,8 @@ from sqlalchemy import (
     create_engine,
     inspect,
     select,
+    text,
+    UniqueConstraint,
 )
 
 
@@ -48,8 +50,6 @@ def _legacy_jobs_table(engine):
     metadata.create_all(engine)
     return jobs
 
-
-from sqlalchemy import UniqueConstraint
 
 
 def test_tenant_migration_preserves_existing_jobs_and_scopes_idempotency():
@@ -88,5 +88,5 @@ def test_tenant_migration_preserves_existing_jobs_and_scopes_idempotency():
         row = connection.execute(select(jobs.c.id, jobs.c.payload)).one()
         assert row.id == "legacy-job"
         assert row.payload == {"message": "keep me"}
-        assert connection.execute(select(jobs.c.tenant_id)).scalar_one() == "default"
-        engine.dispose()
+        assert connection.execute(text("SELECT tenant_id FROM jobs")).scalar_one() == "default"
+    engine.dispose()
