@@ -199,3 +199,50 @@ def test_worker_logs_job_lifecycle_without_logging_payload(monkeypatch, caplog):
         assert "private-payload-marker" not in caplog.text
     finally:
         engine.dispose()
+
+
+def test_run_once_persists_handler_failure_without_logging_payload(monkeypatch, caplog):
+    import logging
+
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+    from sqlalchemy.pool import StaticPool
+
+    from fluxqueue import worker
+
+    engine = create_engine(
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(bind=engine)
+    factory = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
+    monkeypatch.setattr(worker, "SessionLocal", factory)
+
+    def fail_handler(payload):
+        raise RuntimeError("deliberate handler failure")
+
+    monkeypatch.setitem(worker.HANDLERS, "fail_for_test", fail_handler)
+    with factory() as db:
+        job = Job(
+            task_type="fail_for_test",
+            payload={"secret_marker": "do-not-log-this"},
+            max_attempts=2,
+        )
+        db.add(job)
+        db.commit()
+        job_id = job.id
+
+    caplog.set_level(logging.WARNING, logger="fluxqueue.worker")
+    try:
+        assert worker.run_once(worker_id="failure-test-worker")
+        with factory() as db:
+            stored = db.get(Job, job_id)
+            assert stored is not None
+            assert stored.status == JobStatus.RETRY_WAIT.value
+            assert stored.attempt_count == 1
+            assert "RuntimeError" in stored.last_error
+        assert "deliberate handler failure" in caplog.text
+        assert "do-not-log-this" not in caplog.text
+    finally:
+        engine.dispose()
