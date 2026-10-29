@@ -251,7 +251,6 @@ def test_client_cannot_choose_its_own_tenant(client, monkeypatch):
     assert [job["payload"]["message"] for job in jobs.json()["items"]] == ["hello"]
 
 
-
 def test_tenant_key_mapping_takes_precedence_over_legacy_key(client, monkeypatch):
     from fluxqueue.auth import settings
 
@@ -265,7 +264,6 @@ def test_tenant_key_mapping_takes_precedence_over_legacy_key(client, monkeypatch
         client.get("/api/v1/jobs", headers={"Authorization": "Bearer tenant-secret"}).status_code
         == 200
     )
-
 
 
 def test_unicode_api_key_comparison_is_supported(monkeypatch):
