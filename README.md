@@ -10,7 +10,7 @@ A durable job-processing platform built with FastAPI, SQLAlchemy, and PostgreSQL
 ## Current capabilities
 
 - Validated job submission with a 64 KiB serialized-payload cap and commit-before-acceptance.
-- Tenant-scoped API keys and tenant-isolated job reads, listings, cancellation, queue counts, and idempotency keys.
+- Tenant-scoped API keys and tenant-isolated job reads, listings, cancellation, queue counts, and idempotency keys. When `API_KEYS` is non-empty, it takes precedence over the legacy single-tenant `API_KEY`.
 - Job retrieval, filtering, pagination, queue counts, and cancellation.
 - Separate worker process with registered handlers: `echo`, `add_numbers`, and `uppercase`.
 - Lease expiry/reclaim, heartbeat renewal, stale-token fencing, bounded exponential retry, and terminal `dead` state.
