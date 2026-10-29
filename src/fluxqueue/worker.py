@@ -1,5 +1,6 @@
 """Worker claim, lease, completion, and retry primitives."""
 
+import logging
 import os
 import random
 import socket
@@ -17,6 +18,7 @@ from fluxqueue.models import Job, JobStatus
 
 DEFAULT_LEASE_SECONDS = 60
 MAX_RETRY_DELAY_SECONDS = 300
+logger = logging.getLogger(__name__)
 
 
 def claim_next_job(
@@ -221,9 +223,14 @@ HANDLERS = {
 def _heartbeat(job_id: str, token: str, stop: Event, lease_seconds: int) -> None:
     interval = max(1.0, lease_seconds / 3)
     while not stop.wait(interval):
-        with SessionLocal() as session:
-            if not renew_lease(session, job_id, token, lease_seconds=lease_seconds):
-                return
+        try:
+            with SessionLocal() as session:
+                if not renew_lease(session, job_id, token, lease_seconds=lease_seconds):
+                    return
+        except Exception:
+            # A transient database outage should not silently kill lease renewal.
+            # Keep retrying until ownership is lost or execution has stopped.
+            logger.warning("Lease heartbeat failed for job %s; retrying", job_id)
 
 
 def run_once(*, worker_id: str, lease_seconds: int = DEFAULT_LEASE_SECONDS) -> bool:
