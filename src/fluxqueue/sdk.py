@@ -59,10 +59,7 @@ class FluxQueueClient:
         idempotency_key: str | None = None,
     ) -> Any:
         url = f"{self.base_url}{path}" + (f"?{query}" if query else "")
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Accept": "application/json",
-        }
+        headers = {"Authorization": f"Bearer {self.api_key}", "Accept": "application/json"}
         data = None
         if body is not None:
             data = json.dumps(body).encode("utf-8")
