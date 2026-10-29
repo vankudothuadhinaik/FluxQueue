@@ -28,6 +28,7 @@ class JobRead(BaseModel):
     payload_fingerprint: str | None
     result_json: dict[str, Any] | None
     last_error: str | None
+    run_at: datetime | None
     created_at: datetime
     updated_at: datetime
     finished_at: datetime | None
