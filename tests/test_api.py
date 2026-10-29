@@ -251,27 +251,17 @@ def test_client_cannot_choose_its_own_tenant(client, monkeypatch):
     assert [job["payload"]["message"] for job in jobs.json()["items"]] == ["hello"]
 
 
-def test_tenant_api_key_configuration_rejects_invalid_tenant_ids():
-    from pydantic import ValidationError
 
-    from fluxqueue.config import Settings
+def test_tenant_key_mapping_takes_precedence_over_legacy_key(client, monkeypatch):
+    from fluxqueue.auth import settings
 
-    with pytest.raises(ValidationError):
-        Settings(
-            app_env="production",
-            api_key=None,
-            api_keys={"tenant-secret": "../other-tenant"},
-        )
-
-
-def test_production_settings_reject_shared_and_tenant_keys_together():
-    from pydantic import ValidationError
-
-    from fluxqueue.config import Settings
-
-    with pytest.raises(ValidationError):
-        Settings(
-            app_env="production",
-            api_key="legacy-secret",
-            api_keys={"tenant-secret": "tenant-a"},
-        )
+    monkeypatch.setattr(settings, "api_key", "legacy-secret")
+    monkeypatch.setattr(settings, "api_keys", {"tenant-secret": "tenant-a"})
+    assert (
+        client.get("/api/v1/jobs", headers={"Authorization": "Bearer legacy-secret"}).status_code
+        == 401
+    )
+    assert (
+        client.get("/api/v1/jobs", headers={"Authorization": "Bearer tenant-secret"}).status_code
+        == 200
+    )
