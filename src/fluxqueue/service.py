@@ -54,6 +54,23 @@ def enqueue(
             text("SELECT pg_advisory_xact_lock(hashtextextended(:tenant_id, 0))"),
             {"tenant_id": tenant_id},
         )
+    # Recheck idempotency after the lock: another replica may have committed while we waited.
+    if idempotency_key:
+        existing = session.scalar(
+            select(Job).where(
+                Job.tenant_id == tenant_id,
+                Job.queue_name == data.queue,
+                Job.idempotency_key == idempotency_key,
+            )
+        )
+        if existing:
+            if existing.payload_fingerprint != digest:
+                raise HTTPException(
+                    status_code=409,
+                    detail="Idempotency key reused with different request",
+                )
+            return existing
+
     active_jobs = session.scalar(
         select(func.count())
         .select_from(Job)
