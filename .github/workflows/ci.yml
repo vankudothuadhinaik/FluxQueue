@@ -24,7 +24,7 @@ jobs:
     env:
       DATABASE_URL: sqlite:///./ci-test.db
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -111,7 +111,7 @@ jobs:
       DATABASE_URL: postgresql+psycopg://fluxqueue:fluxqueue@localhost:5432/fluxqueue
       FLUXQUEUE_POSTGRES_TEST_URL: postgresql+psycopg://fluxqueue:fluxqueue@localhost:5432/fluxqueue
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -133,7 +133,7 @@ jobs:
   dependency-audit:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -150,7 +150,7 @@ jobs:
       contents: read
       security-events: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: github/codeql-action/init@v3
         with:
           languages: python
