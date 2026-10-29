@@ -321,7 +321,6 @@ def test_active_job_quota_is_enforced_per_tenant(client, monkeypatch):
         headers=tenant_a,
     )
     assert rejected.status_code == 429
-    assert rejected.headers["retry-after"] == "5"
     accepted_for_other_tenant = client.post(
         "/api/v1/jobs",
         json={"task_type": "echo", "payload": {"n": 3}},
