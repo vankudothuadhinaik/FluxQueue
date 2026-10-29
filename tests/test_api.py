@@ -1,5 +1,7 @@
 """API contract and lifecycle tests."""
 
+import pytest
+
 
 def submit(client, payload=None, headers=None):
     body = {
@@ -81,3 +83,26 @@ def test_invalid_priority_is_rejected(client):
 
 def test_invalid_status_filter_is_rejected(client):
     assert client.get("/api/v1/jobs?status=not-a-state").status_code == 422
+
+
+def test_configured_api_key_protects_job_routes(client, monkeypatch):
+    from fluxqueue.auth import settings
+
+    monkeypatch.setattr(settings, "api_key", "test-secret")
+    assert client.get("/api/v1/jobs").status_code == 401
+    assert client.get(
+        "/api/v1/jobs", headers={"Authorization": "Bearer wrong"}
+    ).status_code == 401
+    response = client.get(
+        "/api/v1/jobs", headers={"Authorization": "Bearer test-secret"}
+    )
+    assert response.status_code == 200
+
+
+def test_production_settings_require_api_key():
+    from pydantic import ValidationError
+
+    from fluxqueue.config import Settings
+
+    with pytest.raises(ValidationError):
+        Settings(app_env="production", api_key=None)
