@@ -23,10 +23,12 @@ def test_explicit_database_url_takes_precedence_over_compose_components():
     assert configured.database_url == "postgresql+psycopg://external.example/fluxqueue"
 
 
-def test_production_requires_a_database_configuration():
+def test_production_requires_a_database_configuration(monkeypatch):
     import pytest
     from pydantic import ValidationError
 
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+    monkeypatch.delenv("POSTGRES_PASSWORD", raising=False)
     with pytest.raises(ValidationError, match="DATABASE_URL or POSTGRES_PASSWORD"):
         Settings(app_env="production", api_key="test-key")
 
