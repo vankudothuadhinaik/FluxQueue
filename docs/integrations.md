@@ -18,17 +18,18 @@ Keep the token only in GitHub Actions secrets; never commit it or paste it into 
 
 ## Doppler
 
-The root `doppler.yaml` maps this repository to the Doppler project `fluxqueue`, config `dev`. This file is only a local CLI mapping; it does not create the project/config or prove the workspace is connected.
+The root `doppler.yaml` maps this repository to the Doppler project `fluxqueue`, config `dev`. The mapping is intentionally the same in every setup instruction. It is only a local CLI mapping; it does not create the project/config or prove the workspace is connected.
 
 ### One-time workspace setup
 
 1. In the Doppler dashboard, create a project named `fluxqueue` and a config named `dev` (or adjust `doppler.yaml` to match your actual names).
 2. Add these values to the `dev` config:
-   - `POSTGRES_PASSWORD`: a unique local-development password, not the Compose fallback.
-   - `APP_ENV`: `development`.
+   - `POSTGRES_PASSWORD`: a non-empty local-development password, not the Compose fallback. Compose passes it separately and FluxQueue safely URL-encodes it when building the local database URL.
+   - `APP_ENV`: `development` for this local stack.
    - `API_KEYS`: `{}` for local unauthenticated development, or a JSON object mapping high-entropy bearer keys to tenant IDs for authenticated testing.
    - `MAX_ACTIVE_JOBS_PER_TENANT`: `1000` (optional; this is the application default).
-3. Do not paste Doppler service tokens into GitHub source files, issues, logs, or chat. Use the Doppler CLI login flow for a developer machine; use a narrowly scoped service token only in a secret store for automation/deployments.
+   - `DATABASE_URL`: optional. If omitted, FluxQueue builds the PostgreSQL URL from `POSTGRES_PASSWORD`; supplying it is useful when the database is not the Compose `db` service.
+3. Do not paste Doppler service tokens into GitHub source files, issues, logs, or chat. Use the Doppler CLI login flow for a developer machine; use a narrowly scoped service token only in a secret store for automation/deployments. No Doppler token is required by this repository's CI workflow.
 
 ### Verify locally
 
@@ -36,12 +37,22 @@ Install the Doppler CLI and authenticate with `doppler login`. From the reposito
 
 ```bash
 doppler setup --no-interactive
-doppler secrets
+doppler run -- python scripts/validate_doppler_config.py --require-doppler-env
 doppler run -- docker compose config --quiet
-doppler run -- docker compose up --build
+doppler run -- docker compose up --build -d
+docker compose ps
+curl --fail http://127.0.0.1:8000/health/ready
 ```
 
-Confirm the services become healthy, then check `http://127.0.0.1:8000/health/ready`. Stop the stack with `docker compose down` when finished. Never run `docker compose down -v` against a database whose data must be retained.
+The validator checks the `fluxqueue`/`dev` mapping and confirms the required environment names are wired to API, worker, and PostgreSQL. With `--require-doppler-env`, it also requires a non-empty injected `POSTGRES_PASSWORD`. It never prints resolved environment values. Confirm the API readiness response and `docker compose ps` show healthy services. Stop the stack with `docker compose down` when finished. Never run `docker compose down -v` against a database whose data must be retained.
+
+### Troubleshooting Doppler/Compose
+
+- `POSTGRES_PASSWORD was not injected`: run `doppler login`, repeat `doppler setup --no-interactive`, and verify the selected project is `fluxqueue` and config is `dev`. Do not work around this by committing a token or password.
+- `docker compose config failed`: run `docker compose config --quiet` without Doppler to isolate Compose syntax, then rerun through `doppler run`. Check that `API_KEYS` is valid JSON. If supplying `DATABASE_URL` directly, URL-encode its password component.
+- API readiness fails while PostgreSQL is healthy: inspect `docker compose logs --no-log-prefix api` for non-secret error text and verify `DATABASE_URL` points at `db` when using the included PostgreSQL service. Never use `docker compose config` output as a log artifact because it contains resolved secrets.
+- Worker is unhealthy or idle: check `docker compose logs --no-log-prefix worker`; the worker shares the API's resolved database/application environment and does not need a separate token.
+- A changed Doppler value is not active: restart or recreate the services; settings are read at process startup.
 
 ### Production boundary
 

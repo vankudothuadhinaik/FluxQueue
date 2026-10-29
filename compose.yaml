@@ -1,3 +1,11 @@
+x-fluxqueue-environment: &fluxqueue-environment
+  DATABASE_URL: ${DATABASE_URL:-}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fluxqueue-local-only}
+  APP_ENV: ${APP_ENV:-development}
+  API_KEY: ${API_KEY:-}
+  API_KEYS: ${API_KEYS:-{}}
+  MAX_ACTIVE_JOBS_PER_TENANT: ${MAX_ACTIVE_JOBS_PER_TENANT:-1000}
+
 services:
   db:
     image: postgres:16-alpine
@@ -19,14 +27,9 @@ services:
   api:
     build: .
     restart: unless-stopped
-    environment:
-      DATABASE_URL: postgresql+psycopg://fluxqueue:${POSTGRES_PASSWORD:-fluxqueue-local-only}@db:5432/fluxqueue
-      APP_ENV: ${APP_ENV:-development}
-      API_KEY: ${API_KEY:-}
-      API_KEYS: ${API_KEYS:-{}}
-      MAX_ACTIVE_JOBS_PER_TENANT: ${MAX_ACTIVE_JOBS_PER_TENANT:-1000}
+    environment: *fluxqueue-environment
     ports:
-      - "127.0.0.1:8000:8000"
+      - "127.0.0.1:${FLUXQUEUE_API_PORT:-8000}:8000"
     depends_on:
       db:
         condition: service_healthy
@@ -40,9 +43,7 @@ services:
   worker:
     build: .
     command: ["python", "-m", "fluxqueue.worker"]
-    environment:
-      DATABASE_URL: postgresql+psycopg://fluxqueue:${POSTGRES_PASSWORD:-fluxqueue-local-only}@db:5432/fluxqueue
-      APP_ENV: development
+    environment: *fluxqueue-environment
     depends_on:
       api:
         condition: service_healthy

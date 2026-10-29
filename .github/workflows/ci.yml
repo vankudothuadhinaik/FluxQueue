@@ -54,6 +54,8 @@ jobs:
           retention-days: 14
       - name: Validate Docker Compose configuration
         run: docker compose config --quiet
+      - name: Validate Doppler-to-service environment wiring
+        run: python scripts/validate_doppler_config.py
       - name: Build container image
         run: docker build --tag fluxqueue-ci .
       - name: Verify container runs as non-root

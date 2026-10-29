@@ -34,6 +34,17 @@ The worker polls the same PostgreSQL database and executes registered task types
 
 The Compose database password is a local-development default. Set `POSTGRES_PASSWORD` before shared use. For local development, `API_KEY` is optional. For production, set `APP_ENV=production` and configure `API_KEYS` as a JSON object mapping each high-entropy bearer key to a tenant identifier, for example `{"replace-with-a-long-random-secret":"tenant-a"}`. Send the key as `Authorization: Bearer <key>`. The legacy `API_KEY` setting is retained for single-tenant deployments and maps to the `default` tenant; it does not provide tenant isolation by itself. When `API_KEYS` is non-empty, it takes precedence and the legacy key is not accepted. Store keys in Doppler or another secret manager, never in committed files.
 
+For Doppler-backed Compose startup, configure project `fluxqueue`, config `dev`, and at least `POSTGRES_PASSWORD`, `APP_ENV`, `API_KEYS`, and optionally `MAX_ACTIVE_JOBS_PER_TENANT` in that config. From the repository root, authenticate with `doppler login`, then run `doppler setup --no-interactive` and verify without printing secret values:
+
+```bash
+doppler run -- python scripts/validate_doppler_config.py --require-doppler-env
+doppler run -- docker compose up --build -d
+curl --fail http://127.0.0.1:8000/health/ready
+docker compose ps
+```
+
+The API and worker receive the same resolved database/application environment, while PostgreSQL receives `POSTGRES_PASSWORD`. The validator checks this wiring and emits only variable names and safe diagnostics.
+
 ## API
 
 - `POST /api/v1/jobs`
