@@ -4,7 +4,7 @@ from fastapi import Depends, FastAPI, Header, Query
 from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
-from fluxqueue.db import Base, engine, get_session
+from fluxqueue.db import get_session
 from fluxqueue.models import Job
 from fluxqueue.schemas import JobCreate, JobList, JobRead
 from fluxqueue.service import cancel_queued_job, enqueue, get_job, list_jobs
@@ -14,9 +14,6 @@ app = FastAPI(
     description="Durable job submission and operational API.",
     version="0.1.0",
 )
-# Temporary bootstrap for the initial milestone. Replace with Alembic migrations before production.
-Base.metadata.create_all(bind=engine)
-
 
 @app.get("/health/live", tags=["health"])
 def live() -> dict[str, str]:
