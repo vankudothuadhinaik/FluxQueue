@@ -8,9 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class JobCreate(BaseModel):
-    task_type: str = Field(
-        min_length=1, max_length=128, pattern=r"^[a-zA-Z][a-zA-Z0-9_.-]*$"
-    )
+    task_type: str = Field(min_length=1, max_length=128, pattern=r"^[a-zA-Z][a-zA-Z0-9_.-]*$")
     payload: dict[str, Any] = Field(default_factory=dict)
     queue: str = Field(
         default="default", min_length=1, max_length=128, pattern=r"^[a-zA-Z0-9_.-]+$"
