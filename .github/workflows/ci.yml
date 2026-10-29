@@ -154,4 +154,16 @@ jobs:
         with:
           languages: python
           queries: security-extended
+      # Keep CI usable when GitHub code scanning is not enabled for this repository.
+      # SARIF is retained as an artifact; enabling code scanning allows upload to Security alerts.
       - uses: github/codeql-action/analyze@v3
+        with:
+          upload: false
+      - name: Archive CodeQL SARIF results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fluxqueue-codeql-sarif
+          path: ../results/*.sarif
+          if-no-files-found: warn
+          retention-days: 14
