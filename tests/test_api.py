@@ -85,13 +85,33 @@ def test_invalid_status_filter_is_rejected(client):
     assert client.get("/api/v1/jobs?status=not-a-state").status_code == 422
 
 
-def test_configured_api_key_protects_job_routes(client, monkeypatch):
+def test_configured_api_key_protects_all_api_route_families(client, monkeypatch):
     from fluxqueue.auth import settings
 
     monkeypatch.setattr(settings, "api_key", "test-secret")
-    assert client.get("/api/v1/jobs").status_code == 401
-    assert client.get("/api/v1/jobs", headers={"Authorization": "Bearer wrong"}).status_code == 401
-    response = client.get("/api/v1/jobs", headers={"Authorization": "Bearer test-secret"})
+    protected_requests = [
+        ("GET", "/api/v1/jobs"),
+        ("POST", "/api/v1/jobs"),
+        ("GET", "/api/v1/jobs/missing-job"),
+        ("POST", "/api/v1/jobs/missing-job/cancel"),
+        ("GET", "/api/v1/queues"),
+    ]
+    for method, path in protected_requests:
+        response = client.request(method, path)
+        assert response.status_code == 401, f"{method} {path}: {response.status_code}"
+
+    assert client.get(
+        "/api/v1/jobs", headers={"Authorization": "Bearer wrong"}
+    ).status_code == 401
+    assert client.get(
+        "/api/v1/jobs", headers={"Authorization": "Basic test-secret"}
+    ).status_code == 401
+    assert client.get("/health/live").status_code == 200
+    assert client.get("/health/ready").status_code == 200
+
+    response = client.get(
+        "/api/v1/jobs", headers={"Authorization": "Bearer test-secret"}
+    )
     assert response.status_code == 200
 
 
