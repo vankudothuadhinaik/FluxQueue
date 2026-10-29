@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from typing import Any
 from urllib.error import HTTPError, URLError
-from urllib.parse import quote
+from urllib.parse import quote, urlsplit
 from urllib.request import Request, urlopen
 
 
@@ -32,6 +32,14 @@ class FluxQueueClient:
             raise ValueError("api_key must not be empty")
         if timeout <= 0:
             raise ValueError("timeout must be greater than zero")
+        parsed_url = urlsplit(base_url)
+        if parsed_url.scheme not in {"http", "https"} or not parsed_url.hostname:
+            raise ValueError("base_url must be an absolute HTTP(S) URL")
+        if parsed_url.username or parsed_url.password or parsed_url.query or parsed_url.fragment:
+            raise ValueError("base_url must not contain credentials, query, or fragment")
+        local_hosts = {"localhost", "127.0.0.1", "::1"}
+        if parsed_url.scheme != "https" and parsed_url.hostname not in local_hosts:
+            raise ValueError("HTTPS is required when connecting to a non-local host")
         self.base_url = base_url.rstrip("/")
         self.api_key = api_key
         self.timeout = timeout
