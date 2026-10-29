@@ -24,8 +24,8 @@ jobs:
     env:
       DATABASE_URL: sqlite:///./ci-test.db
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
           cache: pip
@@ -44,7 +44,7 @@ jobs:
         run: pytest --cov=fluxqueue --cov-report=xml --junitxml=junit.xml
       - name: Archive test and coverage reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: fluxqueue-test-reports
           path: |
@@ -113,8 +113,8 @@ jobs:
       DATABASE_URL: postgresql+psycopg://fluxqueue:fluxqueue@localhost:5432/fluxqueue
       FLUXQUEUE_POSTGRES_TEST_URL: postgresql+psycopg://fluxqueue:fluxqueue@localhost:5432/fluxqueue
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
           cache: pip
@@ -125,7 +125,7 @@ jobs:
         run: pytest -q tests/test_postgres_integration.py --junitxml=postgres-junit.xml
       - name: Archive PostgreSQL integration report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: fluxqueue-postgres-integration-report
           path: postgres-junit.xml
@@ -135,8 +135,8 @@ jobs:
   dependency-audit:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
           cache: pip
@@ -152,7 +152,7 @@ jobs:
       contents: read
       security-events: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: github/codeql-action/init@v4
         with:
           languages: python
@@ -165,7 +165,7 @@ jobs:
           output: results
       - name: Archive CodeQL SARIF results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: fluxqueue-codeql-sarif
           path: results/*.sarif
