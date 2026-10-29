@@ -249,3 +249,16 @@ def test_client_cannot_choose_its_own_tenant(client, monkeypatch):
     jobs = client.get("/api/v1/jobs", headers={"Authorization": "Bearer tenant-b-secret"})
     assert jobs.status_code == 200
     assert [job["payload"]["message"] for job in jobs.json()["items"]] == ["hello"]
+
+
+def test_tenant_api_key_configuration_rejects_invalid_tenant_ids():
+    from pydantic import ValidationError
+
+    from fluxqueue.config import Settings
+
+    with pytest.raises(ValidationError):
+        Settings(
+            app_env="production",
+            api_key=None,
+            api_keys={"tenant-secret": "../other-tenant"},
+        )
