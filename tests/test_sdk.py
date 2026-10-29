@@ -118,6 +118,14 @@ def test_cli_reports_missing_api_key():
     assert exc.value.code == 2
 
 
+def test_cli_rejects_non_finite_timeout(capsys):
+    result = main(["--api-key", "key", "--timeout", "nan", "list"])
+    captured = capsys.readouterr()
+    assert result == 1
+    assert "finite number greater than zero" in captured.err
+    assert "Traceback" not in captured.err
+
+
 def test_cli_reports_invalid_base_url_without_traceback(capsys):
     result = main(
         [
