@@ -171,7 +171,7 @@ Codecov upload activates when the repository Actions secret `CODECOV_TOKEN` is c
 
 ## CI status and latest verification
 
-The latest recorded CI run for PR #17 is [40938441694](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40938441694), for commit `6535330` on `feat/doppler-integration`; all four jobs passed. The PR branch also includes a manually triggered deployment smoke workflow at [deployment-smoke.yml](.github/workflows/deployment-smoke.yml). The repository owner reports its checks are green:
+The latest verified CI run for PR #17 is [40943705556](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40943705556), for commit `5c8c4b4` on `feat/doppler-integration`; all four jobs passed. The PR branch also includes a manually triggered deployment smoke workflow at [deployment-smoke.yml](.github/workflows/deployment-smoke.yml). The repository owner reports its checks are green:
 
 - `test`: compilation, migration checks, Ruff, unit/API tests, Compose and Doppler wiring validation, Docker build, non-root check, container smoke test, and Codecov upload. The workflow also syntax-checks the example Nginx configuration with a temporary self-signed certificate; this does not verify a real certificate, public TLS, or live proxy routing.
 - `postgres-integration`: PostgreSQL migration, locking, and lease-fencing checks.
