@@ -340,6 +340,8 @@ class _HealthHandler(BaseHTTPRequestHandler):
 
 def _start_health_server() -> None:
     """Bind the Render-assigned port when the worker is deployed as a web service."""
+    if os.environ.get("WORKER_HEALTH_SERVER", "").lower() != "true":
+        return
     port = os.environ.get("PORT")
     if not port:
         return
