@@ -89,8 +89,11 @@ def test_tenant_migration_preserves_existing_jobs_and_scopes_idempotency():
             migration.upgrade()
 
         inspector = inspect(connection)
-        columns = {column["name"] for column in inspector.get_columns("jobs")}
+        column_info = inspector.get_columns("jobs")
+        columns = {column["name"] for column in column_info}
         assert "tenant_id" in columns
+        tenant_column = next(column for column in column_info if column["name"] == "tenant_id")
+        assert tenant_column["default"] is None
         constraints = {
             item.get("name") for item in inspector.get_unique_constraints("jobs")
         }
