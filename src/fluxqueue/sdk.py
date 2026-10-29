@@ -10,7 +10,7 @@ from urllib.request import Request, urlopen
 
 
 class FluxQueueError(RuntimeError):
-    """API, network, or response error raised by :class:`FluxQueueClient`."""
+    """API, network, or response error raised by FluxQueueClient."""
 
     def __init__(self, message: str, *, status_code: int | None = None) -> None:
         super().__init__(message)
@@ -35,7 +35,12 @@ class FluxQueueClient:
         parsed_url = urlsplit(base_url)
         if parsed_url.scheme not in {"http", "https"} or not parsed_url.hostname:
             raise ValueError("base_url must be an absolute HTTP(S) URL")
-        if parsed_url.username or parsed_url.password or parsed_url.query or parsed_url.fragment:
+        if (
+            parsed_url.username
+            or parsed_url.password
+            or parsed_url.query
+            or parsed_url.fragment
+        ):
             raise ValueError("base_url must not contain credentials, query, or fragment")
         local_hosts = {"localhost", "127.0.0.1", "::1"}
         if parsed_url.scheme != "https" and parsed_url.hostname not in local_hosts:
@@ -54,7 +59,10 @@ class FluxQueueClient:
         idempotency_key: str | None = None,
     ) -> Any:
         url = f"{self.base_url}{path}" + (f"?{query}" if query else "")
-        headers = {"Authorization": f"Bearer {self.api_key}", "Accept": "application/json"}
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Accept": "application/json",
+        }
         data = None
         if body is not None:
             data = json.dumps(body).encode("utf-8")
@@ -112,7 +120,8 @@ class FluxQueueClient:
 
     def cancel_job(self, job_id: str) -> dict[str, Any]:
         """Cancel a queued job."""
-        return self._request("POST", f"/api/v1/jobs/{quote(job_id, safe="")}/cancel")
+        path = f"/api/v1/jobs/{quote(job_id, safe='')}/cancel"
+        return self._request("POST", path)
 
     def list_queues(self) -> dict[str, Any]:
         """Return queue counts available to this API key's tenant."""
