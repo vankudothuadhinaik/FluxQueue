@@ -124,7 +124,7 @@ jobs:
           retention-days: 14
 
   security:
-    continue-on-error: true
+    # CodeQL is non-blocking until SARIF upload permissions are confirmed.
     runs-on: ubuntu-latest
     permissions:
       actions: read
