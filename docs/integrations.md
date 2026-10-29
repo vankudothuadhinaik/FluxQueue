@@ -25,7 +25,7 @@ doppler setup --no-interactive
 doppler run -- docker compose up --build
 ```
 
-The selected config should provide the non-secret configuration and secrets expected by Compose, especially `POSTGRES_PASSWORD` and `API_KEYS`. For production, use a separate production config and set `API_KEYS` to a JSON object mapping high-entropy bearer keys to tenant IDs; `API_KEY` is single-tenant compatibility only. Do not add Doppler service tokens to the repository or CI logs. Official CLI guide: https://docs.doppler.com/docs/cli
+The selected config should provide the non-secret configuration and secrets expected by Compose, especially `POSTGRES_PASSWORD` and `API_KEYS`. For production, use a separate production config and set `API_KEYS` to a JSON object mapping high-entropy bearer keys to tenant IDs; `API_KEY` is single-tenant compatibility only and is ignored when `API_KEYS` is non-empty. Do not add Doppler service tokens to the repository or CI logs. Official CLI guide: https://docs.doppler.com/docs/cli
 
 ## CodeScene
 
