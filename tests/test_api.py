@@ -121,6 +121,14 @@ def test_delayed_job_persists_run_time(client):
     assert response.json()["run_at"] is not None
 
 
+def test_non_finite_numbers_are_rejected_in_payload(client):
+    response = client.post(
+        "/api/v1/jobs",
+        json={"task_type": "echo", "payload": {"not_finite": float("nan")}},
+    )
+    assert response.status_code == 422
+
+
 def test_delay_is_bounded(client):
     response = client.post(
         "/api/v1/jobs",
