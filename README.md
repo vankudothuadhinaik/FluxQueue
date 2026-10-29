@@ -99,7 +99,7 @@ Tenant scope is derived exclusively from the authenticated API key, never from c
 
 ## Integrations
 
-See [developer tooling and integrations](docs/integrations.md) for GitHub Actions, Codecov, Doppler, CodeScene, Copilot, and Codex setup and verification boundaries.
+See [developer tooling and integrations](docs/integrations.md) for GitHub Actions, Codecov, Doppler, CodeScene, Copilot, and Codex setup and verification boundaries. See the [operations runbook](docs/operations.md) for key rotation, quotas, edge policy, recovery, and benchmarking.
 
 Codecov upload activates when the repository Actions secret `CODECOV_TOKEN` is configured. Doppler tokens must be supplied through a secret manager, never committed. CodeScene must be configured through its service UI. Configuration in documentation alone does not prove that an integration is active.
 
