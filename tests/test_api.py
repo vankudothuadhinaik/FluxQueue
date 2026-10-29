@@ -285,3 +285,12 @@ def test_tenant_api_key_settings_reject_invalid_tenant_ids():
         Settings(app_env="production", api_keys={"valid-secret": ""})
     with pytest.raises(ValidationError):
         Settings(app_env="production", api_keys={"valid-secret": "x" * 129})
+
+
+def test_security_headers_are_set_on_api_responses(client):
+    response = client.get("/health/live")
+    assert response.status_code == 200
+    assert response.headers["x-content-type-options"] == "nosniff"
+    assert response.headers["x-frame-options"] == "DENY"
+    assert response.headers["referrer-policy"] == "no-referrer"
+    assert response.headers["cache-control"] == "no-store"
