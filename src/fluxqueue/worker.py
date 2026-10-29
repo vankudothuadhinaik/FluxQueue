@@ -132,35 +132,59 @@ def fail_job(
     retry_max_seconds: float = MAX_RETRY_DELAY_SECONDS,
     jitter: bool = True,
 ) -> str | None:
-    """Record failure with bounded exponential retry; stale workers cannot mutate state."""
+    """Record failure with bounded retry; a stale token cannot change the job."""
     job = session.scalar(
-        select(Job).where(
+        select(Job)
+        .where(
             Job.id == job_id,
             Job.status == JobStatus.RUNNING.value,
             Job.lease_token == token,
         )
+        .with_for_update()
     )
     if job is None:
         session.rollback()
         return None
 
     now = datetime.now(UTC)
-    job.last_error = error[:2000]
-    job.updated_at = now
-    job.locked_by = None
-    job.lease_token = None
-    job.lease_expires_at = None
+    error_text = error[:2000]
     if job.attempt_count >= job.max_attempts:
-        job.status = JobStatus.DEAD.value
-        job.finished_at = now
-        job.run_at = None
+        state = JobStatus.DEAD.value
+        finished_at = now
+        run_at = None
     else:
-        job.status = JobStatus.RETRY_WAIT.value
-        delay = min(retry_max_seconds, retry_base_seconds * (2 ** max(0, job.attempt_count - 1)))
+        state = JobStatus.RETRY_WAIT.value
+        finished_at = None
+        delay = min(
+            retry_max_seconds,
+            retry_base_seconds * (2 ** max(0, job.attempt_count - 1)),
+        )
         if jitter and delay > 0:
             delay = random.uniform(delay * 0.5, delay)
-        job.run_at = now + timedelta(seconds=delay)
-    state = job.status
+        run_at = now + timedelta(seconds=delay)
+
+    # Keep the token predicate in the write itself as a second fence against races.
+    result = session.execute(
+        update(Job)
+        .where(
+            Job.id == job_id,
+            Job.status == JobStatus.RUNNING.value,
+            Job.lease_token == token,
+        )
+        .values(
+            status=state,
+            last_error=error_text,
+            updated_at=now,
+            finished_at=finished_at,
+            run_at=run_at,
+            locked_by=None,
+            lease_token=None,
+            lease_expires_at=None,
+        )
+    )
+    if result.rowcount != 1:
+        session.rollback()
+        return None
     session.commit()
     return state
 
