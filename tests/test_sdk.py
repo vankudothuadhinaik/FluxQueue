@@ -1,0 +1,107 @@
+"""SDK and CLI contract tests without a live API server."""
+
+import json
+from io import BytesIO
+from urllib.error import HTTPError
+
+import pytest
+
+from fluxqueue import sdk
+from fluxqueue.cli import main
+from fluxqueue.sdk import FluxQueueClient, FluxQueueError
+
+
+class FakeResponse:
+    def __init__(self, payload: dict):
+        self.payload = json.dumps(payload).encode()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        return False
+
+    def read(self):
+        return self.payload
+
+
+def test_sdk_submit_sends_bearer_and_idempotency_headers(monkeypatch):
+    captured = {}
+
+    def fake_urlopen(request, timeout):
+        captured["url"] = request.full_url
+        captured["method"] = request.method
+        captured["headers"] = request.headers
+        captured["body"] = json.loads(request.data)
+        captured["timeout"] = timeout
+        return FakeResponse({"id": "job-1", "status": "queued"})
+
+    monkeypatch.setattr(sdk, "urlopen", fake_urlopen)
+    client = FluxQueueClient("http://localhost:8000/", "test-key", timeout=2)
+    result = client.submit(
+        {"task_type": "echo", "payload": {"message": "hi"}},
+        idempotency_key="once-only",
+    )
+
+    assert result["id"] == "job-1"
+    assert captured["url"] == "http://localhost:8000/api/v1/jobs"
+    assert captured["method"] == "POST"
+    assert captured["headers"]["Authorization"] == "Bearer test-key"
+    assert captured["headers"]["Idempotency-key"] == "once-only"
+    assert captured["body"]["task_type"] == "echo"
+    assert captured["timeout"] == 2
+
+
+def test_sdk_list_encodes_query_parameters(monkeypatch):
+    captured = {}
+
+    def fake_urlopen(request, timeout):
+        captured["url"] = request.full_url
+        return FakeResponse({"items": [], "total": 0})
+
+    monkeypatch.setattr(sdk, "urlopen", fake_urlopen)
+    result = FluxQueueClient("http://localhost", "key").list_jobs(
+        status="retry_wait", queue="mail queue", limit=10, offset=20
+    )
+    assert result["total"] == 0
+    assert "status=retry_wait" in captured["url"]
+    assert "queue=mail+queue" in captured["url"]
+    assert "limit=10" in captured["url"]
+
+
+def test_sdk_surfaces_http_status_and_body(monkeypatch):
+    def fake_urlopen(request, timeout):
+        raise HTTPError(
+            request.full_url, 404, "missing", {}, BytesIO(b'{"detail":"not found"}')
+        )
+
+    monkeypatch.setattr(sdk, "urlopen", fake_urlopen)
+    with pytest.raises(FluxQueueError, match="HTTP 404") as exc:
+        FluxQueueClient("http://localhost", "key").get_job("missing")
+    assert exc.value.status_code == 404
+    assert "not found" in str(exc.value)
+
+
+def test_cli_submit_prints_json(monkeypatch, capsys):
+    from fluxqueue import cli
+
+    monkeypatch.setattr(cli, "_load_job", lambda args: {
+        "task_type": "echo", "payload": {"message": "hello"}
+    })
+
+    class FakeClient:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def submit(self, job, *, idempotency_key=None):
+            return {"id": "job-2", "status": "queued"}
+
+    monkeypatch.setattr(cli, "FluxQueueClient", FakeClient)
+    assert main(["--api-key", "key", "submit", "--json", '{"task_type":"echo","payload":{}}']) == 0
+    assert json.loads(capsys.readouterr().out)["id"] == "job-2"
+
+
+def test_cli_reports_missing_api_key():
+    with pytest.raises(SystemExit) as exc:
+        main(["list"])
+    assert exc.value.code == 2
