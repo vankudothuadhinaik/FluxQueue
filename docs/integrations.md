@@ -29,13 +29,13 @@ The validated smoke path also checks missing/invalid authentication, harmless jo
 
 The repository includes `.codecov.yml` and generates `coverage.xml` in GitHub Actions. The workflow uses the official Codecov Action and authenticates with the repository Actions secret `CODECOV_TOKEN`.
 
-**Current verification status: PASS (2026-10-30).** GitHub Actions run [40928314514](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40928314514) successfully uploaded coverage after the repository upload token was regenerated and the GitHub Actions `CODECOV_TOKEN` secret was updated. Keep the token in GitHub Actions secrets only; never commit or paste it into logs, source, or documentation.
+**Current verification status: PASS (2026-10-30).** GitHub Actions run [40934791341](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40934791341) successfully uploaded coverage for commit `dcde57b` after the repository upload token was regenerated and the GitHub Actions `CODECOV_TOKEN` secret was updated. Keep the token in GitHub Actions secrets only; never commit or paste it into logs, source, or documentation.
 
 The upload was verified in GitHub Actions run [40882641655](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40882641655): Codecov found `coverage.xml`, accepted the 3.6 KB upload, and reported **“Upload queued for processing complete.”** The report was queued for processing and can be viewed at the [Codecov commit report](https://app.codecov.io/github/vankudothuadhinaik/fluxqueue/commit/f5f6d93ee5212900ead0cfd9a79aa100d2ac91c5).
 
 Keep the token only in GitHub Actions secrets; never commit it or paste it into source files, issues, or chat. The owner regenerated the Codecov repository upload token and updated the GitHub Actions secret. The successful upload in run [40928314514](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40928314514) confirms the current secret works. A token was visible in a screenshot during troubleshooting; the owner regenerated it afterward. Treat all previously shown tokens as revoked and do not expose the current token. GitHub secret values cannot be read back through the GitHub connection. Official guidance: https://github.com/codecov/codecov-action.
 
-Codecov verification is **PASS** on the latest successful retry, [run 40928314514](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40928314514). The protected-branch coverage upload completed successfully after token rotation.
+Codecov verification is **PASS** on the final commit in [run 40934791341](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40934791341). The protected-branch coverage upload completed successfully after token rotation.
 
 ## Doppler
 
@@ -110,9 +110,9 @@ Copilot and Codex are development assistants, not runtime dependencies. Keep the
 
 ## Current integration status
 
-- GitHub Actions: latest pre-hardening PR CI run [40926045141](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40926045141) passed core jobs on commit `ab303b1`; Codecov processing was rejected as described above.
-- CodeQL and Python dependency audit: passed in that run; the workflow now attempts CodeQL SARIF publication with `security-events: write`.
-- Codecov: **PASS** in [run 40928314514](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40928314514) after repository token rotation and secret update.
+- GitHub Actions: final PR CI run [40934791341](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40934791341) passed all jobs on commit `dcde57b`.
+- CodeQL and Python dependency audit: passed in the final run; CodeQL SARIF publication succeeded.
+- Codecov: **PASS** in [run 40934791341](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40934791341) after repository token rotation and secret update.
 - Doppler: an authenticated local CLI check confirmed project `fluxqueue`, config `dev`, and secret injection; CI validates service wiring without requiring a Doppler token.
-- CodeScene: PR integration is active; the final review on PR #17 passed ([CodeScene check](https://github.com/vankudothuadhinaik/FluxQueue/runs/123620182360), [analysis result](https://codescene.io/projects/87037/delta/results/8195097)).
+- CodeScene: PR integration is active; the final review on PR #17 passed ([CodeScene check](https://github.com/vankudothuadhinaik/FluxQueue/runs/123662321543), [analysis result](https://codescene.io/projects/87037/delta/results/8195097)).
 - Render/other deployment: no production service is created by these files. Deploying a public service requires a deliberate environment, database, and cost decision.

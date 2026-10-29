@@ -5,7 +5,7 @@
 
 A durable job-processing platform built with FastAPI, SQLAlchemy, and PostgreSQL.
 
-> **Current status (2026-10-30):** PR #17 on `feat/doppler-integration` has a successful CI rerun at [run 40928314514](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40928314514), head `5252449`. The test job including Codecov upload, PostgreSQL integration, dependency audit, and CodeQL security analysis all passed. Codecov authentication is currently working. The PR remains open and unmerged while the production-readiness gates below are verified; CI success alone does not establish production readiness.
+> **Current status (2026-10-30):** Docker-first local staging passed, and final CI for PR #17 passed at [run 40934791341](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40934791341), head `dcde57b`. Test, Codecov, PostgreSQL integration, dependency audit, CodeQL, and CodeScene all passed. The PR remains open and unmerged while production-readiness gates below are verified; CI success alone does not establish production readiness.
 
 ## Current capabilities
 
@@ -171,7 +171,7 @@ Codecov upload activates when the repository Actions secret `CODECOV_TOKEN` is c
 
 ## CI status and latest verification
 
-CI runs on pushes, pull requests, and a weekly schedule. The latest verified retry for PR #17 is [run 40928314514](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40928314514) on commit `5252449`. The test job including Codecov upload, PostgreSQL integration, dependency audit, and CodeQL security analysis all passed. Codecov upload is currently verified working:
+CI runs on pushes, pull requests, and a weekly schedule. The latest verified run for PR #17 is [40934791341](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40934791341), associated with commit `dcde57b`. Test, Codecov, PostgreSQL integration, dependency audit, CodeQL publication, and CodeScene all passed:
 
 - `test`: compilation, fresh/upgrade migration checks, Ruff, unit/API tests, Compose and Doppler wiring validation, container build/non-root check, protected-route smoke test, and fail-fast Codecov upload.
 - `postgres-integration`: PostgreSQL migration, locking, and lease-fencing checks.
