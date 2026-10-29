@@ -5,7 +5,7 @@
 
 A durable job-processing platform built with FastAPI, SQLAlchemy, and PostgreSQL.
 
-> **Status: active foundation.** Tenant-scoped API authorization is implemented with a migration and regression tests. Production hardening still requires verified CI, rate limiting/quotas, fault-injection testing, benchmarks, and deployment review.
+> **Status: active foundation.** Tenant-scoped API authorization and a PostgreSQL-serialized active-job quota per tenant are implemented with regression tests. Production hardening still requires verified CI, edge rate limiting, fault-injection testing, benchmarks, and deployment review.
 
 ## Current capabilities
 
@@ -84,7 +84,7 @@ creates and drops the FluxQueue tables.
 
 The `0002_tenant_isolation` migration assigns existing jobs to the `default` tenant, adds tenant-scoped idempotency uniqueness, and indexes tenant queue queries. The worker uses lease tokens to fence stale completion/failure writes and renews leases while a handler runs. Expired claims can be reclaimed. Execution is at-least-once: an external side effect may occur before a worker crashes and acknowledges it, so side-effecting handlers must be idempotent. SQLite is useful for local development; use PostgreSQL for multi-worker deployments and concurrency behavior.
 
-Tenant scope is derived exclusively from the authenticated API key, never from client-supplied request data. The `0002_tenant_isolation` migration backfills existing jobs into the `default` tenant and scopes idempotency keys by tenant and queue. Per-tenant quotas, rate limiting, key rotation/revocation, process-kill/database-outage fault injection, production secret management, and reproducible performance benchmarks remain release gates. See [deployment readiness](docs/deployment-readiness.md) for the pre-deployment checklist and required release evidence. CI includes a SQLite regression test that upgrades a populated pre-tenant jobs table, checks that existing job data survives with the `default` tenant, and verifies downgrade restoration. Migration upgrade/downgrade checks and PostgreSQL row-locking integration tests must pass on the newest run before release.
+Tenant scope is derived exclusively from the authenticated API key, never from client-supplied request data. The `0002_tenant_isolation` migration backfills existing jobs into the `default` tenant and scopes idempotency keys by tenant and queue. Edge rate limiting, key rotation/revocation, process-kill/database-outage fault injection, production secret management, and reproducible performance benchmarks remain release gates. `MAX_ACTIVE_JOBS_PER_TENANT` limits queued, running, and retry-wait jobs per tenant (default 1000); PostgreSQL advisory locks serialize quota checks across API replicas. See [deployment readiness](docs/deployment-readiness.md) for the pre-deployment checklist and required release evidence. CI includes a SQLite regression test that upgrades a populated pre-tenant jobs table, checks that existing job data survives with the `default` tenant, and verifies downgrade restoration. Migration upgrade/downgrade checks and PostgreSQL row-locking integration tests must pass on the newest run before release.
 
 ## Integrations
 
