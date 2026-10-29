@@ -5,7 +5,7 @@
 
 A durable job-processing platform built with FastAPI, SQLAlchemy, and PostgreSQL.
 
-> **Current status (2026-10-29): Doppler integration and CI hardening are implemented on PR #17.** The latest pre-hardening CI run is [40926045141](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40926045141) on commit `ab303b1`; core jobs passed, but Codecov processing failed with `Token required because branch is protected`. The workflow now fails on Codecov upload errors and attempts CodeQL publication. The PR remains open and unmerged pending a valid FluxQueue Codecov token and external production gates.
+> **Current status (2026-10-29): Doppler integration and CI hardening are implemented on PR #17.** Current head `6890964`; [CI run 40927562025](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40927562025) passes application tests, container smoke, PostgreSQL integration, dependency audit, and CodeQL analysis, but fails at Codecov upload with `Token required because branch is protected`. Replace the GitHub Actions `CODECOV_TOKEN` with the FluxQueue repository upload token from Codecov, confirm revocation of the old exposed token, and rerun CI. The PR remains open and unmerged pending valid Codecov authentication and external production-readiness gates.
 
 ## Current capabilities
 
