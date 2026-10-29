@@ -165,3 +165,63 @@ def test_idempotency_keys_are_scoped_to_queue(client):
     first = submit(client, {"queue": "mail"}, headers=headers)
     second = submit(client, {"queue": "reports"}, headers=headers)
     assert first["id"] != second["id"]
+
+
+def test_tenants_cannot_read_cancel_or_list_each_others_jobs(client, monkeypatch):
+    from fluxqueue.auth import settings
+
+    monkeypatch.setattr(settings, "api_key", None)
+    monkeypatch.setattr(
+        settings,
+        "api_keys",
+        {"tenant-a-secret": "tenant-a", "tenant-b-secret": "tenant-b"},
+    )
+    tenant_a = {"Authorization": "Bearer tenant-a-secret", "Idempotency-Key": "shared-key"}
+    tenant_b = {"Authorization": "Bearer tenant-b-secret", "Idempotency-Key": "shared-key"}
+
+    first = client.post(
+        "/api/v1/jobs",
+        json={"task_type": "echo", "queue": "mail", "payload": {"tenant": "a"}},
+        headers=tenant_a,
+    )
+    second = client.post(
+        "/api/v1/jobs",
+        json={"task_type": "echo", "queue": "mail", "payload": {"tenant": "b"}},
+        headers=tenant_b,
+    )
+    assert first.status_code == 202, first.text
+    assert second.status_code == 202, second.text
+    first_job = first.json()
+    second_job = second.json()
+    assert first_job["id"] != second_job["id"]
+
+    tenant_a_jobs = client.get("/api/v1/jobs", headers=tenant_a)
+    tenant_b_jobs = client.get("/api/v1/jobs", headers=tenant_b)
+    assert tenant_a_jobs.status_code == 200
+    assert tenant_b_jobs.status_code == 200
+    assert [job["id"] for job in tenant_a_jobs.json()["items"]] == [first_job["id"]]
+    assert [job["id"] for job in tenant_b_jobs.json()["items"]] == [second_job["id"]]
+
+    assert client.get(f"/api/v1/jobs/{first_job['id']}", headers=tenant_b).status_code == 404
+    assert (
+        client.post(f"/api/v1/jobs/{first_job['id']}/cancel", headers=tenant_b).status_code
+        == 404
+    )
+    assert client.get("/api/v1/queues", headers=tenant_b).json() == [
+        {"name": "mail", "counts": {"queued": 1}}
+    ]
+    assert (
+        client.get(f"/api/v1/jobs/{first_job['id']}", headers=tenant_a).json()["status"]
+        == "queued"
+    )
+
+
+def test_production_settings_accept_tenant_api_keys():
+    from fluxqueue.config import Settings
+
+    configured = Settings(
+        app_env="production",
+        api_key=None,
+        api_keys={"tenant-a-secret": "tenant-a"},
+    )
+    assert configured.api_keys == {"tenant-a-secret": "tenant-a"}
