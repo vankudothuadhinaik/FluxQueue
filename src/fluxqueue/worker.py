@@ -15,6 +15,7 @@ from sqlalchemy import or_, select, update
 from sqlalchemy.orm import Session
 
 from fluxqueue.db import SessionLocal
+from fluxqueue.metrics import increment, observe_processing
 from fluxqueue.models import Job, JobStatus
 
 DEFAULT_LEASE_SECONDS = 60
@@ -262,6 +263,7 @@ def run_once(*, worker_id: str, lease_seconds: int = DEFAULT_LEASE_SECONDS) -> b
         daemon=True,
     )
     heartbeat.start()
+    started = time.monotonic()
     try:
         handler = HANDLERS.get(job["task_type"])
         if handler is None:
@@ -270,6 +272,8 @@ def run_once(*, worker_id: str, lease_seconds: int = DEFAULT_LEASE_SECONDS) -> b
         with SessionLocal() as session:
             completed = complete_job(session, job["id"], job["lease_token"], result)
         if completed:
+            increment("jobs_completed")
+            observe_processing(time.monotonic() - started)
             logger.info("Job %s completed successfully", job["id"])
         else:
             logger.warning(
@@ -285,6 +289,9 @@ def run_once(*, worker_id: str, lease_seconds: int = DEFAULT_LEASE_SECONDS) -> b
                 f"{type(exc).__name__}: {exc}",
             )
         if state is not None:
+            increment("jobs_failed")
+            increment("jobs_dead" if state == JobStatus.DEAD.value else "jobs_retried")
+            observe_processing(time.monotonic() - started)
             logger.warning(
                 "Job %s failed with %s; next state is %s",
                 job["id"],
@@ -304,17 +311,25 @@ def run_once(*, worker_id: str, lease_seconds: int = DEFAULT_LEASE_SECONDS) -> b
 
 def main() -> None:
     """Poll until interrupted; each worker has a unique lease identity."""
+    import signal
+
     worker_id = f"{socket.gethostname()}:{os.getpid()}:{uuid4().hex[:8]}"
     poll_seconds = 1.0
-    while True:
+    shutdown = Event()
+
+    def request_shutdown(signum: int, _frame: Any) -> None:
+        logger.info("Worker shutdown requested by signal %s", signum)
+        shutdown.set()
+
+    signal.signal(signal.SIGTERM, request_shutdown)
+    signal.signal(signal.SIGINT, request_shutdown)
+    while not shutdown.is_set():
         try:
             if not run_once(worker_id=worker_id):
-                time.sleep(poll_seconds)
-        except KeyboardInterrupt:
-            break
+                shutdown.wait(poll_seconds)
         except Exception:
             # A transient database failure should not kill the worker process.
-            time.sleep(min(10.0, poll_seconds * 2))
+            shutdown.wait(min(10.0, poll_seconds * 2))
 
 
 if __name__ == "__main__":

@@ -223,6 +223,8 @@ def test_production_settings_accept_tenant_api_keys():
 
     configured = Settings(
         app_env="production",
+        database_url="postgresql+psycopg://db.example/fluxqueue",
+        database_sslmode="verify-full",
         api_key=None,
         api_keys={"tenant-a-secret": "tenant-a"},
     )

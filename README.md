@@ -14,7 +14,7 @@ A durable job-processing platform built with FastAPI, SQLAlchemy, and PostgreSQL
 - Job retrieval, filtering, pagination, queue counts, and cancellation.
 - Separate worker process with registered handlers: `echo`, `add_numbers`, and `uppercase`.
 - Lease expiry/reclaim, heartbeat renewal, stale-token fencing, bounded exponential retry, terminal `dead` state, and payload-free worker lifecycle logs.
-- Non-root API/worker container, baseline security response headers, loopback-bound local Compose ports, Alembic migrations, SQLite unit/API tests, PostgreSQL concurrency integration tests, container startup/auth smoke checks, Ruff, CodeQL, automated dependency auditing, Dependabot, and optional Codecov.
+- Non-root API/worker container, baseline security response headers, loopback-bound local Compose ports, Alembic migrations, SQLite unit/API tests, PostgreSQL concurrency integration tests, container startup/auth smoke checks, low-cardinality `/metrics`, Ruff, CodeQL, automated dependency auditing, Dependabot, and optional Codecov.
 
 ## Quick start
 
@@ -45,6 +45,8 @@ docker compose ps
 
 The API and worker receive the same resolved database/application environment, while PostgreSQL receives `POSTGRES_PASSWORD`. The validator checks this wiring and emits only variable names and safe diagnostics.
 
+For managed PostgreSQL, set `DATABASE_SSLMODE=verify-full` (preferred) or `verify-ca` and provide `DATABASE_SSLROOTCERT` through the secret/file provisioning system. Optional `DATABASE_SSLCERT` and `DATABASE_SSLKEY` support mutual TLS. Production configuration fails fast unless PostgreSQL is configured with certificate-verified TLS; local SQLite and development Compose remain available for development.
+
 ## API
 
 - `POST /api/v1/jobs`
@@ -53,6 +55,7 @@ The API and worker receive the same resolved database/application environment, w
 - `POST /api/v1/jobs/{job_id}/cancel`
 - `GET /api/v1/queues`
 - `GET /health/live` and `GET /health/ready`
+- `GET /metrics` (keep this endpoint on a private monitoring network; it exposes aggregate counts, not payloads or credentials)
 
 ## Python SDK and CLI
 

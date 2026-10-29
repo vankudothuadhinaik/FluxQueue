@@ -11,6 +11,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from fluxqueue.config import settings
+from fluxqueue.metrics import increment
 from fluxqueue.models import Job, JobStatus
 from fluxqueue.schemas import JobCreate
 
@@ -124,6 +125,7 @@ def enqueue(
                 return existing
         raise HTTPException(status_code=409, detail="Conflicting idempotency key") from exc
     session.refresh(job)
+    increment("jobs_enqueued")
     return job
 
 

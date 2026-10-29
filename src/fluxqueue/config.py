@@ -21,6 +21,10 @@ class Settings(BaseSettings):
     database_port: int = 5432
     database_name: str = "fluxqueue"
     database_user: str = "fluxqueue"
+    database_sslmode: str | None = None
+    database_sslrootcert: str | None = None
+    database_sslcert: str | None = None
+    database_sslkey: str | None = None
     log_level: str = "INFO"
     api_key: str | None = None
     api_keys: dict[str, str] = Field(default_factory=dict)
@@ -36,6 +40,11 @@ class Settings(BaseSettings):
                     f"@{self.database_host}:{self.database_port}/"
                     f"{quote(self.database_name, safe='')}"
                 )
+            elif self.app_env.lower() in {"production", "prod"}:
+                raise ValueError(
+                    "DATABASE_URL or POSTGRES_PASSWORD must be configured when "
+                    "APP_ENV is production"
+                )
             else:
                 self.database_url = "sqlite:///./fluxqueue.db"
         return self
@@ -49,6 +58,23 @@ class Settings(BaseSettings):
             raise ValueError("API_KEYS must not contain empty API keys")
         if any(not tenant or len(tenant) > 128 for tenant in self.api_keys.values()):
             raise ValueError("API_KEYS tenant identifiers must be 1 to 128 characters")
+        if self.database_sslmode and self.database_sslmode not in {
+            "disable",
+            "allow",
+            "prefer",
+            "require",
+            "verify-ca",
+            "verify-full",
+        }:
+            raise ValueError("DATABASE_SSLMODE must be a supported PostgreSQL sslmode")
+        if (
+            self.app_env.lower() in {"production", "prod"}
+            and not self.database_url.startswith("sqlite")
+            and self.database_sslmode not in {"verify-ca", "verify-full"}
+        ):
+            raise ValueError(
+                "production PostgreSQL requires DATABASE_SSLMODE=verify-ca or verify-full"
+            )
         return self
 
 

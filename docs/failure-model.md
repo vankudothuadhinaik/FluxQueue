@@ -14,7 +14,8 @@
 - Worker lifecycle logs record claims, outcomes, and stale-lease fencing without emitting job payloads or API keys.
 - Active jobs (queued, running, or waiting for retry) are capped per tenant by `MAX_ACTIVE_JOBS_PER_TENANT`; PostgreSQL advisory transaction locks serialize quota checks across API replicas.
 
-The API/worker tests cover key transitions, but the full suite has not yet been confirmed green in GitHub Actions.
+The API/worker tests cover key transitions; the final CI run must remain the release evidence for the
+latest commit rather than relying on a local run.
 
 ## Delivery semantics
 

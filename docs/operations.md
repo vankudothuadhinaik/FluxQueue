@@ -42,6 +42,12 @@ and does not coordinate between multiple independent proxy instances; use a dist
 or shared rate-limit store for a multi-proxy deployment. Keep the application bound to a private
 network and do not trust client-supplied forwarded headers unless the trusted proxy overwrites them.
 
+For managed PostgreSQL, set `DATABASE_SSLMODE=verify-full` and provide the CA bundle through
+`DATABASE_SSLROOTCERT`. Use `verify-ca` only when hostname verification is intentionally handled
+by the managed service's documented certificate policy. Do not use `require`, `prefer`, or an
+unverified custom certificate in production. `DATABASE_SSLCERT` and `DATABASE_SSLKEY` are
+available for mutual TLS and must be provisioned as protected files, not committed values.
+
 ## Health and incident triage
 
 - /health/live indicates the API process is responding.
@@ -49,6 +55,10 @@ network and do not trust client-supplied forwarded headers unless the trusted pr
   handling and investigation of PostgreSQL availability, connection limits, and credentials.
 - Worker logs include job ID, attempt count, state outcomes, and stale-lease rejection without
   logging job payloads or API keys.
+- `/metrics` exposes fixed, low-cardinality counters for enqueued/completed/failed/retried/dead
+  jobs, current jobs by state, oldest queued-job age, and aggregate processing duration. Keep it
+  on a private monitoring network; no Prometheus server or alert provider is installed by this
+  repository.
 - Check queue counts and oldest queued-job age before increasing worker replicas. Review dead jobs,
   retry rates, handler duration, lease expiry, and database connection saturation.
 - Execution is at-least-once. For external side effects, use downstream idempotency keys and a
@@ -63,6 +73,26 @@ network and do not trust client-supplied forwarded headers unless the trusted pr
   records before declaring disaster recovery ready.
 - Do not run the PostgreSQL integration tests against a database containing data you need to keep;
   their fixture creates and drops FluxQueue tables.
+
+### Backup and restore procedure
+
+Recommended starting policy (not an established service commitment): daily full backups, point-in-
+time recovery where the managed provider supports it, 35-day retention, an RPO target of 24 hours,
+and an RTO target agreed with the service owner. Tighten these values only after measuring restore
+time and storage cost.
+
+1. Create a fresh disposable PostgreSQL database or provider restore branch; never overwrite the
+   source database.
+2. Restore the backup using the provider's documented tool, provision the same TLS CA and a
+   least-privilege application role, and run `alembic upgrade head`.
+3. Verify representative job counts, tenant isolation, idempotency records, and `/health/ready`
+   against the restored target.
+4. Record backup timestamp, migration revision, restore duration, validation results, and the
+   exact target identifier. Destroy the disposable target only after evidence is retained without
+   secrets.
+
+Migration rollback is not a disaster-recovery strategy. Prefer forward migrations or restore to a
+new target, then switch traffic only after health and data checks pass.
 
 ## Benchmarking
 
