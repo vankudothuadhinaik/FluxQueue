@@ -53,9 +53,7 @@ def parse_args() -> argparse.Namespace:
 def validate_doppler_environment(required: bool) -> int:
     """Check required secret injection without revealing the secret."""
     if required and not os.environ.get("POSTGRES_PASSWORD"):
-        return fail(
-            "POSTGRES_PASSWORD was not injected; authenticate Doppler and check config dev"
-        )
+        return fail("POSTGRES_PASSWORD was not injected; authenticate Doppler and check config dev")
     return 0
 
 
@@ -100,9 +98,7 @@ def validate_service_environment(document: dict[str, Any]) -> int:
         present = set(environment) if isinstance(environment, dict) else set()
         missing = sorted(required - present)
         if missing:
-            return fail(
-                f"service {service} is missing environment mappings: {', '.join(missing)}"
-            )
+            return fail(f"service {service} is missing environment mappings: {', '.join(missing)}")
     return 0
 
 
