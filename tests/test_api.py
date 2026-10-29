@@ -195,6 +195,10 @@ def test_tenants_cannot_read_cancel_or_list_each_others_jobs(client, monkeypatch
     second_job = second.json()
     assert first_job["id"] != second_job["id"]
 
+    assert (
+        client.get("/api/v1/jobs", headers={"Authorization": "Bearer invalid-secret"}).status_code
+        == 401
+    )
     tenant_a_jobs = client.get("/api/v1/jobs", headers=tenant_a)
     tenant_b_jobs = client.get("/api/v1/jobs", headers=tenant_b)
     assert tenant_a_jobs.status_code == 200
