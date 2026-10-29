@@ -23,7 +23,7 @@ A heartbeat renews the lease only while the same token owns a running job. Succe
 
 ## Retry behavior
 
-Failures are stored as bounded error text. Jobs below their attempt limit transition to `retry_wait` with bounded exponential backoff and jitter. Exhausted jobs transition to `dead`. Side-effecting handlers must remain idempotent because a worker can complete an external side effect and crash before persisting success.
+Failures are stored as bounded error text. Jobs below their attempt limit transition to `retry_wait` with bounded exponential backoff and jitter. Exhausted jobs transition to `dead`. New jobs can be delayed by up to 24 hours; workers claim them only once `run_at` is due. Side-effecting handlers must remain idempotent because a worker can complete an external side effect and crash before persisting success.
 
 ## Migrations and deployment
 
