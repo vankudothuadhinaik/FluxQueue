@@ -2,6 +2,8 @@
 
 FluxQueue is an early-stage job queue. Passing CI is necessary, but it does not make a deployment production-ready. Keep the service private until the required gates below are complete.
 
+Local Docker-first staging evidence (2026-10-30): the isolated `fluxqueue-staging` Compose project built successfully, ran API/worker as UID/GID `10001:10001`, passed readiness/authentication/metrics checks, completed a harmless job, produced no test-secret log matches, and recovered a completed job after Compose restart. This is local evidence only; it is not a deployed staging or production validation.
+
 ## Before any shared environment
 
 - [ ] Configure `API_KEYS` in the secret manager as a JSON mapping from high-entropy bearer keys to tenant IDs; use legacy `API_KEY` only for a single-tenant deployment.

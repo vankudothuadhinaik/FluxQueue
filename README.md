@@ -5,7 +5,7 @@
 
 A durable job-processing platform built with FastAPI, SQLAlchemy, and PostgreSQL.
 
-> **Current status (2026-10-29): Doppler integration and CI hardening are implemented on PR #17.** The latest pre-hardening CI run is [40926045141](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40926045141) on commit `ab303b1`; core jobs passed, but Codecov processing failed with `Token required because branch is protected`. The workflow now fails on Codecov upload errors and attempts CodeQL publication. The PR remains open and unmerged pending a valid FluxQueue Codecov token and external production gates.
+> **Current status (2026-10-30):** Docker-first local staging passed on the current application code. The latest CI run is [40927562025](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40927562025) for `6890964`; PostgreSQL, dependency audit, security, CodeQL publication, and CodeScene passed, while the test job correctly failed on Codecov token validation. The PR remains open and unmerged pending a valid FluxQueue Codecov token and external production gates.
 
 ## Current capabilities
 
@@ -52,6 +52,22 @@ docker compose ps
 The API and worker receive the same resolved database/application environment, while PostgreSQL receives `POSTGRES_PASSWORD`. The validator checks this wiring and emits only variable names and safe diagnostics. Do not print or commit secret values.
 
 For managed PostgreSQL, set `DATABASE_SSLMODE=verify-full` (preferred) or `verify-ca` and provide `DATABASE_SSLROOTCERT` through the secret/file provisioning system. Optional `DATABASE_SSLCERT` and `DATABASE_SSLKEY` support mutual TLS. Production configuration fails fast unless PostgreSQL is configured with certificate-verified TLS; local SQLite and development Compose remain available for development.
+
+### Docker-first local staging smoke test
+
+Use an isolated Compose project and loopback port for disposable staging validation. The command below uses test-only credentials:
+
+```powershell
+$env:FLUXQUEUE_API_PORT = "18005"
+$env:POSTGRES_PASSWORD = "docker-staging-password"
+$env:API_KEY = "docker-staging-test-key"
+$env:APP_ENV = "development"
+docker compose -p fluxqueue-staging up -d --build
+curl.exe --fail http://127.0.0.1:18005/health/ready
+docker compose -p fluxqueue-staging ps
+```
+
+Verify liveness/readiness, protected-route responses, a harmless authenticated job, `/metrics`, worker logs, and restart recovery. Stop only this isolated project with `docker compose -p fluxqueue-staging down`; this preserves the disposable `fluxqueue-staging_postgres_data` volume. The image excludes tests, docs, local environments, caches, and Git metadata through `.dockerignore` and runs as UID/GID `10001:10001`.
 
 ## API
 
@@ -155,7 +171,7 @@ Codecov upload activates when the repository Actions secret `CODECOV_TOKEN` is c
 
 ## CI status and latest verification
 
-CI runs on pushes, pull requests, and a weekly schedule. The latest pre-hardening run for PR #17 is [run 40926045141](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40926045141), associated with commit `ab303b1`. Core jobs and CodeScene passed, but Codecov processing failed because the protected-branch upload did not accept the configured secret. The workflow now treats that failure as blocking and publishes CodeQL SARIF when supported:
+CI runs on pushes, pull requests, and a weekly schedule. The latest run for PR #17 is [40927562025](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40927562025), associated with commit `6890964`. PostgreSQL, dependency audit, security, CodeQL publication, and CodeScene passed; the test job failed only at the now fail-fast Codecov upload because the protected-branch token was rejected:
 
 - `test`: compilation, fresh/upgrade migration checks, Ruff, unit/API tests, Compose and Doppler wiring validation, container build/non-root check, protected-route smoke test, and fail-fast Codecov upload.
 - `postgres-integration`: PostgreSQL migration, locking, and lease-fencing checks.

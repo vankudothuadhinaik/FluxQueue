@@ -8,6 +8,23 @@ On pushes and pull requests, CI runs lint/format checks, migration validation, u
 
 JUnit test results and coverage XML are uploaded as workflow artifacts when available. Open the workflow run to inspect the machine-readable reports; screenshots are not part of the verification process.
 
+## Docker-first local staging
+
+The repository has no configured cloud staging environment. Use the isolated Compose project `fluxqueue-staging` for zero-cost local staging checks:
+
+```powershell
+$env:FLUXQUEUE_API_PORT = "18005"
+$env:POSTGRES_PASSWORD = "docker-staging-password"
+$env:API_KEY = "docker-staging-test-key"
+$env:APP_ENV = "development"
+docker compose -p fluxqueue-staging up -d --build
+curl.exe --fail http://127.0.0.1:18005/health/ready
+docker compose -p fluxqueue-staging ps
+docker compose -p fluxqueue-staging down
+```
+
+The validated smoke path also checks missing/invalid authentication, harmless job completion, `/metrics`, worker logs for secret leakage, and recovery of a completed job after `docker compose -p fluxqueue-staging restart`. The `fluxqueue-staging_postgres_data` volume is intentionally preserved by `down`; use a separate disposable project and volume for destructive migration tests.
+
 ## Codecov
 
 The repository includes `.codecov.yml` and generates `coverage.xml` in GitHub Actions. The workflow uses the official Codecov Action and authenticates with the repository Actions secret `CODECOV_TOKEN`.
@@ -16,7 +33,7 @@ The repository includes `.codecov.yml` and generates `coverage.xml` in GitHub Ac
 
 The upload was verified in GitHub Actions run [40882641655](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40882641655): Codecov found `coverage.xml`, accepted the 3.6 KB upload, and reported **“Upload queued for processing complete.”** The report was queued for processing and can be viewed at the [Codecov commit report](https://app.codecov.io/github/vankudothuadhinaik/fluxqueue/commit/f5f6d93ee5212900ead0cfd9a79aa100d2ac91c5).
 
-Keep the token only in GitHub Actions secrets; never commit it or paste it into source files, issues, or chat. The repository owner reports that `CODECOV_TOKEN` has been updated in GitHub repository secrets. The test job was rerun on commit `96604cefc04b51d819e0da7faccc2460c570f136`, and the `Upload coverage to Codecov` step completed successfully in run [40923030906](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40923030906). This verifies that the configured secret permits the upload; it does not independently prove the old credential was revoked in Codecov, so confirm revocation in the Codecov account if not already done. Official guidance: https://github.com/codecov/codecov-action
+Keep the token only in GitHub Actions secrets; never commit it or paste it into source files, issues, or chat. The configured repository secret is currently rejected for the protected-branch upload. Replace it with the FluxQueue repository token and rerun CI; this repository cannot inspect or change the secret value. Official guidance: https://github.com/codecov/codecov-action
 
 Codecov verification is **BLOCKED**. Run [40926045141](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40926045141) supplied a token, but Codecov rejected the protected-branch upload with `Token required because branch is protected`. Replace the GitHub `CODECOV_TOKEN` secret with the FluxQueue repository token and rerun CI. Revocation of the previously exposed token must also be confirmed in Codecov itself.
 
