@@ -9,7 +9,9 @@ from pydantic import BaseModel, ConfigDict, Field
 class JobCreate(BaseModel):
     task_type: str = Field(min_length=1, max_length=128, pattern=r"^[a-zA-Z][a-zA-Z0-9_.-]*$")
     payload: dict[str, Any] = Field(default_factory=dict)
-    queue: str = Field(default="default", min_length=1, max_length=128, pattern=r"^[a-zA-Z0-9_.-]+$")
+    queue: str = Field(
+        default="default", min_length=1, max_length=128, pattern=r"^[a-zA-Z0-9_.-]+$"
+    )
     priority: int = Field(default=5, ge=0, le=9)
     max_attempts: int = Field(default=3, ge=1, le=20)
 
