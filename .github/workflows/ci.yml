@@ -21,6 +21,10 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: python -m pip install -e '.[dev]'
+      - name: Validate fresh schema migration
+        run: alembic upgrade head
+      - name: Validate upgrade from the pre-worker schema
+        run: alembic downgrade base && alembic upgrade head
       - run: ruff check .
       - run: ruff format --check .
       - run: pytest --cov=fluxqueue --cov-report=xml
