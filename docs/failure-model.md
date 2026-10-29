@@ -1,28 +1,30 @@
 # Failure model
 
-## Current guarantees
+## Verified by design in current foundation
 
-- An accepted job is committed before the API returns.
-- Pydantic validates the request structure.
-- Repeated queue-scoped idempotency keys with the same request return the existing job.
-- Reusing a key with different input returns HTTP 409.
-- Cancellation currently applies only to queued/retry-wait jobs.
+- The enqueue service commits before returning the accepted job.
+- Request structure is validated.
+- Repeating a queue-scoped idempotency key with the same canonical request returns the original record.
+- Reusing that key with changed request data returns HTTP 409.
+- Queued/retry-wait jobs can be cancelled; other states return HTTP 409.
 
-## Not yet guaranteed
+These describe intended code behavior; run the local test suite and CI to verify it in a particular commit.
 
-The foundation does not yet execute jobs, retry handlers, recover crashed workers, fence stale acknowledgements, or promise exactly-once external side effects. No performance benchmark is claimed.
+## Not implemented yet
 
-## Target delivery semantics
+No worker execution, retry loop, dead-letter flow, delayed scheduling, lease recovery, stale-worker fencing, auth, or benchmark results are delivered by this foundation.
 
-A worker queue commonly provides at-least-once execution. A handler may complete an external effect and crash before acknowledgement; side-effecting handlers must be idempotent.
+## Delivery semantics
 
-## Required recovery tests
+A future worker implementation should target at-least-once execution. Exactly-once external side effects cannot be guaranteed by the queue alone: a handler can complete a side effect and crash before persisting its acknowledgement. Handlers should be idempotent or use downstream idempotency keys.
+
+## Required fault-injection cases
 
 1. Worker exits after claim but before execution.
-2. Worker exits mid-handler.
-3. Handler succeeds but acknowledgement is lost.
-4. Lease expires and another worker reclaims the job.
-5. Old worker tries to acknowledge after re-claim.
-6. Database disconnects during enqueue/acknowledgement.
-7. Restart while scheduled/retry work is due.
-8. Concurrent submissions reuse one idempotency key.
+2. Worker exits during a handler.
+3. Handler finishes but acknowledgement is lost.
+4. Lease expires and another worker claims the job.
+5. Stale worker attempts acknowledgement after re-claim.
+6. Database disconnect during enqueue or acknowledgement.
+7. Restart while delayed/retry jobs are due.
+8. Concurrent requests reuse a single idempotency key.
