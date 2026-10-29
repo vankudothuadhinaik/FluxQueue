@@ -6,6 +6,7 @@ remain the fast default; these tests exercise PostgreSQL semantics that SQLite l
 
 import os
 from concurrent.futures import ThreadPoolExecutor
+from datetime import UTC, datetime, timedelta
 from threading import Barrier
 
 import pytest
@@ -49,9 +50,15 @@ def test_skip_locked_claims_next_available_job(postgres_sessions):
     """A locked oldest row must not block a worker from claiming the next row."""
     first = add_job(postgres_sessions, "first")
     second = add_job(postgres_sessions, "second")
+    with postgres_sessions() as setup_session:
+        first_row = setup_session.get(Job, first.id)
+        assert first_row is not None
+        first_row.created_at = datetime.now(UTC) - timedelta(days=1)
+        setup_session.commit()
     locker = postgres_sessions()
     try:
-        locker.execute(select(Job).where(Job.id == first.id).with_for_update())
+        locked_job = locker.scalar(select(Job).where(Job.id == first.id).with_for_update())
+        assert locked_job is not None
         with postgres_sessions() as worker_session:
             claimed = claim_next_job(worker_session, "worker-b")
         assert claimed is not None
