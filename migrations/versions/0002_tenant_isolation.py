@@ -17,7 +17,9 @@ def upgrade() -> None:
         return
 
     columns = {column["name"] for column in inspector.get_columns("jobs")}
-    constraints = {constraint.get("name") for constraint in inspector.get_unique_constraints("jobs")}
+    constraints = {
+        constraint.get("name") for constraint in inspector.get_unique_constraints("jobs")
+    }
 
     if "tenant_id" not in columns:
         with op.batch_alter_table("jobs") as batch:
@@ -63,7 +65,9 @@ def downgrade() -> None:
     with op.batch_alter_table("jobs") as batch:
         if "ix_jobs_tenant_queue_status_created" in indexes:
             batch.drop_index("ix_jobs_tenant_queue_status_created")
-        constraints = {constraint.get("name") for constraint in inspector.get_unique_constraints("jobs")}
+        constraints = {
+            constraint.get("name") for constraint in inspector.get_unique_constraints("jobs")
+        }
         if "uq_jobs_tenant_queue_idempotency" in constraints:
             batch.drop_constraint("uq_jobs_tenant_queue_idempotency", type_="unique")
         if "uq_jobs_queue_idempotency" not in constraints:
