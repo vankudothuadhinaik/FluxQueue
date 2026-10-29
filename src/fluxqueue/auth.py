@@ -23,11 +23,11 @@ def require_api_key(authorization: str | None = Header(default=None)) -> str:
         )
 
     for candidate, tenant_id in settings.api_keys.items():
-        if tenant_id and len(tenant_id) <= 128 and compare_digest(provided, candidate):
+        if tenant_id and len(tenant_id) <= 128 and compare_digest(provided.encode("utf-8"), candidate.encode("utf-8")):
             return tenant_id
 
     expected = settings.api_key
-    if expected and not settings.api_keys and compare_digest(provided, expected):
+    if expected and not settings.api_keys and compare_digest(provided.encode("utf-8"), expected.encode("utf-8")):
         return "default"
 
     if not expected and not settings.api_keys and settings.app_env.lower() not in {
