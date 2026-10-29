@@ -11,7 +11,7 @@ A durable job-processing platform built with FastAPI, SQLAlchemy, and PostgreSQL
 - Job retrieval, filtering, pagination, queue counts, and cancellation.
 - Separate worker process with registered handlers: `echo`, `add_numbers`, and `uppercase`.
 - Lease expiry/reclaim, heartbeat renewal, stale-token fencing, bounded exponential retry, and terminal `dead` state.
-- Alembic migration path, Docker Compose, API/worker tests, Ruff, CodeQL, Dependabot, and optional Codecov.
+- Alembic migration path, Docker Compose, SQLite unit/API tests, PostgreSQL concurrency integration tests, Ruff, CodeQL, Dependabot, and optional Codecov.
 
 ## Quick start
 
@@ -58,7 +58,7 @@ Run the API with `uvicorn fluxqueue.main:app --reload` and the worker in a separ
 
 The worker uses lease tokens to fence stale completion/failure writes and renews leases while a handler runs. Expired claims can be reclaimed. Execution is at-least-once: an external side effect may occur before a worker crashes and acknowledges it, so side-effecting handlers must be idempotent. SQLite is useful for local development; use PostgreSQL for multi-worker deployments and concurrency behavior.
 
-Authentication, tenant isolation, rate limits, payload-size limits, full fault injection, migration rollback validation, and performance benchmarks are not yet complete. Do not treat the project as production-ready until these gates are tested.
+The shared API key is not tenant isolation. Per-tenant authorization, rate limiting, process-kill/database-outage fault injection, production secret management, and reproducible performance benchmarks remain release gates. Migration upgrade/downgrade checks and PostgreSQL row-locking integration tests run in CI, but their newest run must pass before those checks are considered verified.
 
 ## Integrations
 
@@ -66,7 +66,7 @@ Codecov upload activates when the repository Actions secret `CODECOV_TOKEN` is c
 
 ## CI status
 
-The latest completed test job validated fresh and legacy-schema migrations, passed Ruff lint/format checks, and passed **25 tests**. CodeQL analysis is still running, and Codecov upload is skipped unless the `CODECOV_TOKEN` secret is configured. Check [GitHub Actions](https://github.com/vankudothuadhinaik/FluxQueue/actions) for the newest run before release.
+CI checks SQLite unit/API tests and a separate PostgreSQL service job for `SKIP LOCKED`, concurrent claims, expired-lease recovery, and stale-token fencing. The PostgreSQL job also validates the Alembic migration. The newly added PostgreSQL job has not yet been confirmed green; verify the newest [GitHub Actions run](https://github.com/vankudothuadhinaik/FluxQueue/actions) before release. Codecov upload is skipped unless `CODECOV_TOKEN` is configured.
 
 ## License
 
