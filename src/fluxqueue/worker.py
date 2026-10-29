@@ -195,8 +195,10 @@ def _echo(payload: dict[str, Any]) -> dict[str, Any]:
 
 def _add_numbers(payload: dict[str, Any]) -> dict[str, Any]:
     numbers = payload.get("numbers")
-    if not isinstance(numbers, list) or not numbers or any(
-        isinstance(value, bool) or not isinstance(value, int | float) for value in numbers
+    if (
+        not isinstance(numbers, list)
+        or not numbers
+        or any(isinstance(value, bool) or not isinstance(value, int | float) for value in numbers)
     ):
         raise ValueError("payload.numbers must be a non-empty list of numbers")
     return {"sum": sum(numbers)}
