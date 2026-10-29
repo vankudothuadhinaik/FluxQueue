@@ -29,7 +29,7 @@ curl -X POST http://localhost:8000/api/v1/jobs -H 'content-type: application/jso
 
 The worker polls the same PostgreSQL database and executes registered task types. For arithmetic, use `task_type: "add_numbers"` with `payload: {"numbers":[1,2,3]}`; for text conversion, use `task_type: "uppercase"` with `payload: {"text":"fluxqueue"}`.
 
-The Compose database password is a local-development default. Set `POSTGRES_PASSWORD` before shared use; do not expose this unauthenticated API publicly.
+The Compose database password is a local-development default. Set `POSTGRES_PASSWORD` before shared use. In production, set `APP_ENV=production` and a strong `API_KEY`; startup configuration fails if the key is missing. Send it as `Authorization: Bearer <API_KEY>`. The single shared API key is not tenant-level authorization.
 
 ## API
 
