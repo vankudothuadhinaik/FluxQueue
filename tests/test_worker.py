@@ -242,7 +242,8 @@ def test_run_once_persists_handler_failure_without_logging_payload(monkeypatch, 
             assert stored.status == JobStatus.RETRY_WAIT.value
             assert stored.attempt_count == 1
             assert "RuntimeError" in stored.last_error
-        assert "deliberate handler failure" in caplog.text
+            assert "deliberate handler failure" in stored.last_error
+        assert "deliberate handler failure" not in caplog.text
         assert "do-not-log-this" not in caplog.text
     finally:
         engine.dispose()
