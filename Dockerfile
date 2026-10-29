@@ -7,4 +7,4 @@ COPY src ./src
 RUN pip install --no-cache-dir .
 USER 10001:10001
 EXPOSE 8000
-CMD ["sh", "-c", "alembic upgrade head && exec uvicorn fluxqueue.main:app --host 0.0.0.0 --port 8000"]
+CMD ["sh", "-c", "alembic upgrade head && if [ \"${RUN_WORKER:-false}\" = \"true\" ]; then python -m fluxqueue.worker & fi; exec uvicorn fluxqueue.main:app --host 0.0.0.0 --port \"${PORT:-8000}\""]

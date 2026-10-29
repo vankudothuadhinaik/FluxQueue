@@ -11,6 +11,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from fluxqueue.config import settings
+from fluxqueue.metrics import increment
 from fluxqueue.models import Job, JobStatus
 from fluxqueue.schemas import JobCreate
 
@@ -20,57 +21,36 @@ class JobPage(NamedTuple):
     total: int
 
 
-def fingerprint(data: JobCreate) -> str:
-    canonical = json.dumps(data.model_dump(mode="json"), sort_keys=True, separators=(",", ":"))
-    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
-
-
-def enqueue(
+def _find_idempotent_job(
     session: Session,
     data: JobCreate,
     idempotency_key: str | None,
-    tenant_id: str = "default",
-) -> Job:
-    digest = fingerprint(data)
-    if idempotency_key:
-        existing = session.scalar(
-            select(Job).where(
-                Job.tenant_id == tenant_id,
-                Job.queue_name == data.queue,
-                Job.idempotency_key == idempotency_key,
-            )
+    tenant_id: str,
+    digest: str,
+) -> Job | None:
+    if not idempotency_key:
+        return None
+    existing = session.scalar(
+        select(Job).where(
+            Job.tenant_id == tenant_id,
+            Job.queue_name == data.queue,
+            Job.idempotency_key == idempotency_key,
         )
-        if existing:
-            if existing.payload_fingerprint != digest:
-                raise HTTPException(
-                    status_code=409,
-                    detail="Idempotency key reused with different request",
-                )
-            return existing
+    )
+    if existing and existing.payload_fingerprint != digest:
+        raise HTTPException(status_code=409, detail="Idempotency key reused with different request")
+    return existing
 
-    # PostgreSQL advisory locks serialize quota checks for the same tenant across API replicas.
+
+def _lock_tenant(session: Session, tenant_id: str) -> None:
     if session.get_bind().dialect.name == "postgresql":
         session.execute(
             text("SELECT pg_advisory_xact_lock(hashtextextended(:tenant_id, 0))"),
             {"tenant_id": tenant_id},
         )
-    # Recheck idempotency after the lock: another replica may have committed while we waited.
-    if idempotency_key:
-        existing = session.scalar(
-            select(Job).where(
-                Job.tenant_id == tenant_id,
-                Job.queue_name == data.queue,
-                Job.idempotency_key == idempotency_key,
-            )
-        )
-        if existing:
-            if existing.payload_fingerprint != digest:
-                raise HTTPException(
-                    status_code=409,
-                    detail="Idempotency key reused with different request",
-                )
-            return existing
 
+
+def _ensure_quota(session: Session, tenant_id: str) -> None:
     active_jobs = (
         session.scalar(
             select(func.count())
@@ -90,10 +70,32 @@ def enqueue(
     )
     if active_jobs >= settings.max_active_jobs_per_tenant:
         session.rollback()
-        raise HTTPException(
-            status_code=429,
-            detail="Tenant active job quota exceeded",
-        )
+        raise HTTPException(status_code=429, detail="Tenant active job quota exceeded")
+
+
+def fingerprint(data: JobCreate) -> str:
+    canonical = json.dumps(data.model_dump(mode="json"), sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def enqueue(
+    session: Session,
+    data: JobCreate,
+    idempotency_key: str | None,
+    tenant_id: str = "default",
+) -> Job:
+    digest = fingerprint(data)
+    existing = _find_idempotent_job(session, data, idempotency_key, tenant_id, digest)
+    if existing:
+        return existing
+
+    # PostgreSQL advisory locks serialize quota checks for the same tenant across API replicas.
+    _lock_tenant(session, tenant_id)
+    # Recheck idempotency after the lock: another replica may have committed while we waited.
+    existing = _find_idempotent_job(session, data, idempotency_key, tenant_id, digest)
+    if existing:
+        return existing
+    _ensure_quota(session, tenant_id)
 
     now = datetime.now(UTC)
     job = Job(
@@ -124,6 +126,7 @@ def enqueue(
                 return existing
         raise HTTPException(status_code=409, detail="Conflicting idempotency key") from exc
     session.refresh(job)
+    increment("jobs_enqueued")
     return job
 
 

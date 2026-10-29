@@ -1,0 +1,70 @@
+name: Deployment smoke test
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fluxqueue-deployment-smoke
+  cancel-in-progress: false
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      BASE_URL: https://fluxqueue-api.onrender.com
+      API_KEY: ${{ secrets.FLUXQUEUE_API_KEY }}
+    steps:
+      - name: Validate required secret
+        shell: bash
+        run: |
+          if [[ -z "$API_KEY" ]]; then
+            echo "::error::Add repository Actions secret FLUXQUEUE_API_KEY using the active FluxQueue tenant API key."
+            exit 1
+          fi
+
+      - name: Check API liveness and database readiness
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --retry 3 --retry-delay 5 "$BASE_URL/health/live"
+          echo
+          curl --fail --silent --show-error --retry 3 --retry-delay 5 "$BASE_URL/health/ready"
+          echo
+
+      - name: Submit and verify a real job lifecycle
+        shell: bash
+        run: |
+          set -euo pipefail
+          marker="deployment-smoke-$(date +%s)"
+          payload="$(jq -nc --arg marker "$marker" '{task_type:"echo",payload:{message:$marker},queue:"deployment-smoke",priority:5,max_attempts:2}')"
+          response="$(curl --fail --silent --show-error -X POST "$BASE_URL/api/v1/jobs" \
+            -H "Authorization: Bearer $API_KEY" \
+            -H 'Content-Type: application/json' \
+            -H "Idempotency-Key: $marker" \
+            --data "$payload")"
+          job_id="$(jq -er '.id' <<<"$response")"
+          echo "Submitted job id: $job_id"
+          for attempt in $(seq 1 30); do
+            current="$(curl --fail --silent --show-error "$BASE_URL/api/v1/jobs/$job_id" \
+              -H "Authorization: Bearer $API_KEY")"
+            status="$(jq -r '.status' <<<"$current")"
+            echo "Poll $attempt: status=$status"
+            if [[ "$status" == "succeeded" ]]; then
+              jq -e --arg marker "$marker" '.result_json.payload.message == $marker' <<<"$current" >/dev/null
+              echo "End-to-end job processing passed."
+              exit 0
+            fi
+            if [[ "$status" == "dead" || "$status" == "cancelled" ]]; then
+              echo "::error::Smoke job reached terminal status $status"
+              jq '{id,status,last_error}' <<<"$current"
+              exit 1
+            fi
+            sleep 2
+          done
+          echo "::error::Job did not succeed within 60 seconds."
+          jq '{id,status,last_error}' <<<"$current"
+          exit 1

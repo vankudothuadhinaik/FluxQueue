@@ -2,6 +2,8 @@
 
 FluxQueue is an early-stage job queue. Passing CI is necessary, but it does not make a deployment production-ready. Keep the service private until the required gates below are complete.
 
+Local Docker-first staging evidence (2026-10-30): the isolated `fluxqueue-staging` Compose project built successfully, ran API/worker as UID/GID `10001:10001`, passed readiness/authentication/metrics checks, completed a harmless job, produced no test-secret log matches, and recovered a completed job after Compose restart. This is local evidence only; it is not a deployed staging or production validation.
+
 ## Before any shared environment
 
 - [ ] Configure `API_KEYS` in the secret manager as a JSON mapping from high-entropy bearer keys to tenant IDs; use legacy `API_KEY` only for a single-tenant deployment.
@@ -21,8 +23,8 @@ FluxQueue is an early-stage job queue. Passing CI is necessary, but it does not 
 - [ ] Define and test secret rotation and revocation without logging credentials.
 - [ ] Test database outage, worker termination during a handler, lease expiry, retry exhaustion, and recovery after restart.
 - [ ] Verify every external side-effecting handler is idempotent; execution is at-least-once, not exactly-once.
-- [ ] Add structured logs and operational metrics for queue depth, oldest-job age, retries, dead jobs, lease expiry, handler duration, and database failures.
-- [ ] Define alert thresholds, an on-call owner, backup restoration procedure, and a rollback procedure.
+- [ ] Export `/metrics` to a private monitoring system and add structured aggregation for database failures and lease-expiry alerts; FluxQueue supplies low-cardinality queue, outcome, age, and processing-duration metrics but does not install an alert provider.
+- [ ] Add alert thresholds, an on-call owner, backup restoration procedure, and a rollback procedure.
 - [ ] Run `scripts/benchmark_api.py` against a controlled environment, then run a separate end-to-end load/soak test; record throughput, latency percentiles, worker concurrency, and database utilization.
 - [ ] Review dependency/security scan results and resolve or explicitly accept findings.
 - [ ] Confirm migration rollout and rollback behavior against a disposable copy of production-like data; CI also tests tenant migration against a populated legacy SQLite table.

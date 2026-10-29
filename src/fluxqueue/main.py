@@ -2,7 +2,7 @@
 
 from fastapi import Depends, FastAPI, Header, Query
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, PlainTextResponse
 from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 from starlette.middleware.base import RequestResponseEndpoint
@@ -11,6 +11,7 @@ from starlette.responses import Response
 
 from fluxqueue.auth import require_api_key
 from fluxqueue.db import get_session
+from fluxqueue.metrics import render
 from fluxqueue.models import Job
 from fluxqueue.schemas import JobCreate, JobList, JobRead
 from fluxqueue.service import cancel_queued_job, enqueue, get_job, list_jobs
@@ -58,6 +59,12 @@ def live() -> dict[str, str]:
 def ready(session: Session = Depends(get_session)) -> dict[str, str]:
     session.execute(text("SELECT 1"))
     return {"status": "ready", "database": "reachable"}
+
+
+@app.get("/metrics", response_class=PlainTextResponse, include_in_schema=False)
+def metrics(session: Session = Depends(get_session)) -> PlainTextResponse:
+    """Expose low-cardinality operational metrics for a private scraper."""
+    return PlainTextResponse(render(session), media_type="text/plain; version=0.0.4")
 
 
 @app.post(

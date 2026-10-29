@@ -13,6 +13,12 @@ class Base(DeclarativeBase):
 
 
 connect_args = {"check_same_thread": False} if settings.database_url.startswith("sqlite") else {}
+if settings.database_sslmode:
+    connect_args["sslmode"] = settings.database_sslmode
+for name in ("sslrootcert", "sslcert", "sslkey"):
+    value = getattr(settings, f"database_{name}")
+    if value:
+        connect_args[name] = value
 engine = create_engine(settings.database_url, pool_pre_ping=True, connect_args=connect_args)
 SessionLocal = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
 

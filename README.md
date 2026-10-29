@@ -5,7 +5,7 @@
 
 A durable job-processing platform built with FastAPI, SQLAlchemy, and PostgreSQL.
 
-> **Status: active foundation.** Tenant-scoped API authorization and a PostgreSQL-serialized active-job quota per tenant are implemented with regression tests. Production hardening still requires verified CI, edge rate limiting, fault-injection testing, benchmarks, and deployment review.
+> **Current status (2026-10-30):** The free-tier demo deployment is live at [fluxqueue-api.onrender.com](https://fluxqueue-api.onrender.com), backed by a dedicated Neon PostgreSQL project in Singapore. CI checks and the manual deployment smoke test have been reported green; the smoke workflow exercises API liveness/readiness and an authenticated echo job through worker completion. The API container can also run the worker alongside the API via `RUN_WORKER=true`. Free-tier services may sleep and have usage limits; this is a demo deployment, not a production availability guarantee. PR #17 remains open and unmerged.
 
 ## Current capabilities
 
@@ -14,7 +14,9 @@ A durable job-processing platform built with FastAPI, SQLAlchemy, and PostgreSQL
 - Job retrieval, filtering, pagination, queue counts, and cancellation.
 - Separate worker process with registered handlers: `echo`, `add_numbers`, and `uppercase`.
 - Lease expiry/reclaim, heartbeat renewal, stale-token fencing, bounded exponential retry, terminal `dead` state, and payload-free worker lifecycle logs.
-- Non-root API/worker container, baseline security response headers, loopback-bound local Compose ports, Alembic migrations, SQLite unit/API tests, PostgreSQL concurrency integration tests, container startup/auth smoke checks, Ruff, CodeQL, automated dependency auditing, Dependabot, and optional Codecov.
+- Non-root API/worker container, baseline security response headers, loopback-bound local Compose ports, Alembic migrations, SQLite unit/API tests, PostgreSQL concurrency integration tests, container startup/auth smoke checks, low-cardinality `/metrics`, Ruff, CodeQL, automated dependency auditing, Dependabot, and optional Codecov.
+- Doppler-to-Compose environment validation, secret-safe diagnostics, and URL-encoded PostgreSQL credentials.
+- Example Nginx edge policy with explicit TLS 1.2/1.3 defaults, disabled server tokens, request-size limits, and per-IP API rate limiting.
 
 ## Quick start
 
@@ -34,6 +36,39 @@ The worker polls the same PostgreSQL database and executes registered task types
 
 The Compose database password is a local-development default. Set `POSTGRES_PASSWORD` before shared use. For local development, `API_KEY` is optional. For production, set `APP_ENV=production` and configure `API_KEYS` as a JSON object mapping each high-entropy bearer key to a tenant identifier, for example `{"replace-with-a-long-random-secret":"tenant-a"}`. Send the key as `Authorization: Bearer <key>`. The legacy `API_KEY` setting is retained for single-tenant deployments and maps to the `default` tenant; it does not provide tenant isolation by itself. When `API_KEYS` is non-empty, it takes precedence and the legacy key is not accepted. Store keys in Doppler or another secret manager, never in committed files.
 
+### Doppler-backed Compose startup
+
+Configure Doppler project `fluxqueue`, config `dev`, and at least `POSTGRES_PASSWORD`, `APP_ENV`, and `API_KEYS`; `MAX_ACTIVE_JOBS_PER_TENANT` is optional. Authenticate using the Doppler CLI, then run from the repository root:
+
+```bash
+doppler login
+doppler setup --no-interactive
+doppler run -- python scripts/validate_doppler_config.py --require-doppler-env
+doppler run -- docker compose up --build -d
+curl --fail http://127.0.0.1:8000/health/ready
+docker compose ps
+```
+
+The API and worker receive the same resolved database/application environment, while PostgreSQL receives `POSTGRES_PASSWORD`. The validator checks this wiring and emits only variable names and safe diagnostics. Do not print or commit secret values.
+
+For managed PostgreSQL, set `DATABASE_SSLMODE=verify-full` (preferred) or `verify-ca` and provide `DATABASE_SSLROOTCERT` through the secret/file provisioning system. Optional `DATABASE_SSLCERT` and `DATABASE_SSLKEY` support mutual TLS. Production configuration fails fast unless PostgreSQL is configured with certificate-verified TLS; local SQLite and development Compose remain available for development.
+
+### Docker-first local staging smoke test
+
+Use an isolated Compose project and loopback port for disposable staging validation. The command below uses test-only credentials:
+
+```powershell
+$env:FLUXQUEUE_API_PORT = "18005"
+$env:POSTGRES_PASSWORD = "docker-staging-password"
+$env:API_KEY = "docker-staging-test-key"
+$env:APP_ENV = "development"
+docker compose -p fluxqueue-staging up -d --build
+curl.exe --fail http://127.0.0.1:18005/health/ready
+docker compose -p fluxqueue-staging ps
+```
+
+Verify liveness/readiness, protected-route responses, a harmless authenticated job, `/metrics`, worker logs, and restart recovery. Stop only this isolated project with `docker compose -p fluxqueue-staging down`; this preserves the disposable `fluxqueue-staging_postgres_data` volume. The image excludes tests, docs, local environments, caches, and Git metadata through `.dockerignore` and runs as UID/GID `10001:10001`.
+
 ## API
 
 - `POST /api/v1/jobs`
@@ -42,6 +77,7 @@ The Compose database password is a local-development default. Set `POSTGRES_PASS
 - `POST /api/v1/jobs/{job_id}/cancel`
 - `GET /api/v1/queues`
 - `GET /health/live` and `GET /health/ready`
+- `GET /metrics` (keep this endpoint on a private monitoring network; it exposes aggregate counts, not payloads or credentials)
 
 ## Python SDK and CLI
 
@@ -102,18 +138,13 @@ ruff check .
 ruff format --check .
 ```
 
-The PostgreSQL-only integration tests verify real row-lock skipping, simultaneous worker claims,
-expired lease reclamation, and stale-token fencing. They are run automatically by the
-`postgres-integration` GitHub Actions job against a disposable PostgreSQL 16 service. To run
-them locally, start a disposable PostgreSQL database and set
-`FLUXQUEUE_POSTGRES_TEST_URL=postgresql+psycopg://USER:PASSWORD@HOST:5432/DATABASE`, then run:
+The PostgreSQL-only integration tests verify real row-lock skipping, simultaneous worker claims, expired lease reclamation, and stale-token fencing. They run automatically in the `postgres-integration` GitHub Actions job against a disposable PostgreSQL 16 service. To run locally, start a disposable PostgreSQL database and set `FLUXQUEUE_POSTGRES_TEST_URL=postgresql+psycopg://USER:PASSWORD@HOST:5432/DATABASE`, then run:
 
 ```bash
 pytest -q tests/test_postgres_integration.py
 ```
 
-Do not point these integration tests at a database containing data you need to keep: the fixture
-creates and drops the FluxQueue tables.
+Do not point these integration tests at a database containing data you need to keep: the fixture creates and drops the FluxQueue tables.
 
 ## Benchmarking
 
@@ -130,18 +161,40 @@ It reports request throughput, mean/p50/p95/p99 response latency, and HTTP statu
 
 The `0002_tenant_isolation` migration assigns existing jobs to the `default` tenant, adds tenant-scoped idempotency uniqueness, and indexes tenant queue queries. The worker uses lease tokens to fence stale completion/failure writes and renews leases while a handler runs. Expired claims can be reclaimed. Execution is at-least-once: an external side effect may occur before a worker crashes and acknowledges it, so side-effecting handlers must be idempotent. SQLite is useful for local development; use PostgreSQL for multi-worker deployments and concurrency behavior.
 
-Tenant scope is derived exclusively from the authenticated API key, never from client-supplied request data. The `0002_tenant_isolation` migration backfills existing jobs into the `default` tenant and scopes idempotency keys by tenant and queue. Edge rate limiting, key rotation/revocation, process-kill/database-outage fault injection, production secret management, and controlled load/soak benchmark evidence remain release gates; a repeatable enqueue benchmark utility is included. `MAX_ACTIVE_JOBS_PER_TENANT` limits queued, running, and retry-wait jobs per tenant (default 1000); PostgreSQL advisory locks serialize quota checks across API replicas. See [deployment readiness](docs/deployment-readiness.md) for the pre-deployment checklist and required release evidence. See the [controlled fault-injection and soak-test runbook](docs/fault-injection-and-soak-test.md) for repeatable recovery and load-test procedures. CI includes a SQLite regression test that upgrades a populated pre-tenant jobs table, checks that existing job data survives with the `default` tenant, and verifies downgrade restoration. Migration upgrade/downgrade checks and PostgreSQL row-locking integration tests must pass on the newest run before release.
+Tenant scope is derived exclusively from the authenticated API key, never from client-supplied request data. `MAX_ACTIVE_JOBS_PER_TENANT` limits queued, running, and retry-wait jobs per tenant (default 1000); PostgreSQL advisory locks serialize quota checks across API replicas. See [deployment readiness](docs/deployment-readiness.md) for the pre-deployment checklist and required release evidence, [controlled fault-injection and soak-test runbook](docs/fault-injection-and-soak-test.md) for recovery/load-test procedures, and [operations runbook](docs/operations.md) for key rotation, quotas, edge policy, recovery, and benchmarking.
 
 ## Integrations
 
-See [developer tooling and integrations](docs/integrations.md) for GitHub Actions, Codecov, Doppler, CodeScene, Copilot, and Codex setup and verification boundaries. See the [operations runbook](docs/operations.md) for key rotation, quotas, edge policy, recovery, and benchmarking.
+See [developer tooling and integrations](docs/integrations.md) for GitHub Actions, Codecov, Doppler, CodeScene, Copilot, and Codex setup and verification boundaries.
 
-Codecov upload activates when the repository Actions secret `CODECOV_TOKEN` is configured. Doppler tokens must be supplied through a secret manager, never committed. CodeScene must be configured through its service UI. Configuration in documentation alone does not prove that an integration is active.
+Codecov upload activates when the repository Actions secret `CODECOV_TOKEN` is configured. A successful upload does not prove an exposed credential was revoked; confirm rotation and revocation in Codecov/GitHub settings. Doppler tokens must be supplied through a secret manager, never committed. CodeScene must be configured through its service UI. Documentation alone does not prove an integration is active.
 
-## CI status
+## CI status and latest verification
 
-CI runs automatically on pushes, pull requests, and a weekly schedule. It checks SQLite unit/API tests, validates Compose configuration, builds the container and verifies it runs as non-root, smoke-tests startup/health/authenticated access, archives machine-readable test reports, audits resolved Python dependencies, and runs a separate PostgreSQL service job for `SKIP LOCKED`, concurrent claims, expired-lease recovery, and stale-token fencing. The PostgreSQL job also validates the Alembic migration. Treat a release as blocked unless the latest required CI checks pass; use GitHub's native check status and uploaded test reports as evidence, not screenshots or copied logs. Codecov upload is skipped unless `CODECOV_TOKEN` is configured.
+The latest verified CI run for PR #17 is [40943705556](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40943705556), for commit `5c8c4b4` on `feat/doppler-integration`; all four jobs passed. The PR branch also includes a manually triggered deployment smoke workflow at [deployment-smoke.yml](.github/workflows/deployment-smoke.yml). The repository owner reports its checks are green:
 
+- `test`: compilation, migration checks, Ruff, unit/API tests, Compose and Doppler wiring validation, Docker build, non-root check, container smoke test, and Codecov upload. The workflow also syntax-checks the example Nginx configuration with a temporary self-signed certificate; this does not verify a real certificate, public TLS, or live proxy routing.
+- `postgres-integration`: PostgreSQL migration, locking, and lease-fencing checks.
+- `dependency-audit`: resolved Python dependency audit.
+- `security`: CodeQL analysis and SARIF publication.
+
+The Docker-first local staging run and its detailed checks are recorded above and in [developer tooling and integrations](docs/integrations.md). Earlier local verification recorded 73 passed and 4 skipped, plus 4 PostgreSQL integration tests passed; those local results are historical and are not claimed as freshly rerun during the final documentation update.
+
+## Production readiness: still outstanding
+
+**CI and local Docker success do not make FluxQueue production-ready.** The following deployment-owner gates remain open:
+
+- Confirm Codecov credential rotation/revocation in provider settings; the replacement upload succeeded in CI, but secret values cannot be read back through GitHub.
+- Validate Nginx syntax, certificates, TLS negotiation, and proxy behavior in an authorized disposable environment. The example is a starting point; `limit_req_zone` belongs in the Nginx `http {}` context.
+- Verify managed PostgreSQL network restrictions and least-privilege credentials; test backup restoration and migration rollback against production-like data. Neon automatic snapshot scheduling is not enabled for this project, so a manual snapshot exists but automated backup scheduling is not configured.
+- Exercise database outages, worker termination during handlers, lease expiry, retry exhaustion, and restart recovery.
+- Verify idempotency for every external side-effecting handler.
+- Configure and verify operational metrics, structured logs, alerts, on-call ownership, resource limits, log retention, and rollback procedures.
+- Run controlled load and soak tests; record throughput, latency percentiles, worker concurrency, and database utilization.
+- Implement and test API-key rotation/revocation workflow; self-service key management is not implemented.
+
+Track evidence in [deployment readiness](docs/deployment-readiness.md). A free-tier demo deployment is provisioned on Render with a dedicated Neon PostgreSQL project; the smoke test is reported green, but the deployment is not production staging. Free-tier sleep/usage limits and the remaining deployment-owner gates above still apply. PR #17 remains open and unmerged.
+  
 ## License
 
 MIT — see [LICENSE](LICENSE).

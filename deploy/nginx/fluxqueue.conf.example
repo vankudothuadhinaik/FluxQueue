@@ -10,13 +10,18 @@ upstream fluxqueue_api {
 server {
     listen 443 ssl;
     server_name fluxqueue.example.com;
+    server_tokens off;
 
     # Replace with certificates provisioned by your TLS/certificate manager.
     ssl_certificate /etc/letsencrypt/live/fluxqueue.example.com/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/fluxqueue.example.com/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
 
     client_max_body_size 128k;
     add_header Strict-Transport-Security "max-age=31536000" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "DENY" always;
+    add_header Referrer-Policy "no-referrer" always;
 
     location /api/ {
         limit_req zone=fluxqueue_per_ip burst=20 nodelay;
@@ -29,6 +34,7 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_connect_timeout 5s;
         proxy_read_timeout 60s;
+        proxy_send_timeout 60s;
         proxy_pass http://fluxqueue_api;
     }
 

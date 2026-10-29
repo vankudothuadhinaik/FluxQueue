@@ -7,14 +7,16 @@ import random
 import socket
 import time
 from datetime import UTC, datetime, timedelta
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from threading import Event, Thread
 from typing import Any
 from uuid import uuid4
 
-from sqlalchemy import or_, select, update
+from sqlalchemy import or_, select, text, update
 from sqlalchemy.orm import Session
 
 from fluxqueue.db import SessionLocal
+from fluxqueue.metrics import increment, observe_processing
 from fluxqueue.models import Job, JobStatus
 
 DEFAULT_LEASE_SECONDS = 60
@@ -262,6 +264,7 @@ def run_once(*, worker_id: str, lease_seconds: int = DEFAULT_LEASE_SECONDS) -> b
         daemon=True,
     )
     heartbeat.start()
+    started = time.monotonic()
     try:
         handler = HANDLERS.get(job["task_type"])
         if handler is None:
@@ -270,6 +273,8 @@ def run_once(*, worker_id: str, lease_seconds: int = DEFAULT_LEASE_SECONDS) -> b
         with SessionLocal() as session:
             completed = complete_job(session, job["id"], job["lease_token"], result)
         if completed:
+            increment("jobs_completed")
+            observe_processing(time.monotonic() - started)
             logger.info("Job %s completed successfully", job["id"])
         else:
             logger.warning(
@@ -285,6 +290,9 @@ def run_once(*, worker_id: str, lease_seconds: int = DEFAULT_LEASE_SECONDS) -> b
                 f"{type(exc).__name__}: {exc}",
             )
         if state is not None:
+            increment("jobs_failed")
+            increment("jobs_dead" if state == JobStatus.DEAD.value else "jobs_retried")
+            observe_processing(time.monotonic() - started)
             logger.warning(
                 "Job %s failed with %s; next state is %s",
                 job["id"],
@@ -302,19 +310,67 @@ def run_once(*, worker_id: str, lease_seconds: int = DEFAULT_LEASE_SECONDS) -> b
     return True
 
 
+class _HealthHandler(BaseHTTPRequestHandler):
+    """Minimal health endpoints so a worker can run on a web-service free tier."""
+
+    def do_GET(self) -> None:
+        if self.path == "/health/live":
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(b'{"status":"alive"}')
+            return
+        if self.path == "/health/ready":
+            try:
+                with SessionLocal() as session:
+                    session.execute(text("SELECT 1"))
+            except Exception:
+                self.send_response(503)
+                self.end_headers()
+                self.wfile.write(b'{"status":"not_ready"}')
+                return
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(b'{"status":"ready","database":"reachable"}')
+            return
+        self.send_error(404)
+
+    def log_message(self, _format: str, *_args: object) -> None:
+        return
+
+
+def _start_health_server() -> None:
+    """Bind the Render-assigned port when the worker is deployed as a web service."""
+    if os.environ.get("WORKER_HEALTH_SERVER", "").lower() != "true":
+        return
+    port = os.environ.get("PORT")
+    if not port:
+        return
+    server = ThreadingHTTPServer(("0.0.0.0", int(port)), _HealthHandler)
+    Thread(target=server.serve_forever, name="worker-health-server", daemon=True).start()
+
+
 def main() -> None:
     """Poll until interrupted; each worker has a unique lease identity."""
+    import signal
+
+    _start_health_server()
     worker_id = f"{socket.gethostname()}:{os.getpid()}:{uuid4().hex[:8]}"
     poll_seconds = 1.0
-    while True:
+    shutdown = Event()
+
+    def request_shutdown(signum: int, _frame: Any) -> None:
+        logger.info("Worker shutdown requested by signal %s", signum)
+        shutdown.set()
+
+    signal.signal(signal.SIGTERM, request_shutdown)
+    signal.signal(signal.SIGINT, request_shutdown)
+    while not shutdown.is_set():
         try:
             if not run_once(worker_id=worker_id):
-                time.sleep(poll_seconds)
-        except KeyboardInterrupt:
-            break
+                shutdown.wait(poll_seconds)
         except Exception:
             # A transient database failure should not kill the worker process.
-            time.sleep(min(10.0, poll_seconds * 2))
+            shutdown.wait(min(10.0, poll_seconds * 2))
 
 
 if __name__ == "__main__":
