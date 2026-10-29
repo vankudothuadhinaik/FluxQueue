@@ -36,6 +36,28 @@ jobs:
         run: docker build --tag fluxqueue-ci .
       - name: Verify container runs as non-root
         run: test "$(docker image inspect --format '{{.Config.User}}' fluxqueue-ci)" = "10001:10001"
+      - name: Smoke-test container startup, migrations, and protected routes
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run --detach --rm --name fluxqueue-smoke \
+            --publish 127.0.0.1:8000:8000 \
+            --env DATABASE_URL=sqlite:////tmp/fluxqueue-smoke.db \
+            --env APP_ENV=production \
+            --env API_KEY=ci-smoke-test-key \
+            fluxqueue-ci
+          cleanup() { docker rm --force fluxqueue-smoke >/dev/null 2>&1 || true; }
+          trap cleanup EXIT
+          ready=0
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:8000/health/ready >/dev/null; then
+              ready=1
+              break
+            fi
+            sleep 1
+          done
+          test "$ready" = "1"
+          test "$(curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1:8000/api/v1/jobs)" = "401"
       - name: Upload coverage to Codecov
         if: env.CODECOV_TOKEN != ''
         uses: codecov/codecov-action@v5
