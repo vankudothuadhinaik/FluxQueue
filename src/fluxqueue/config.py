@@ -1,5 +1,7 @@
 """Runtime settings with production fail-closed checks."""
 
+import re
+
 from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -17,8 +19,11 @@ class Settings(BaseSettings):
     @classmethod
     def validate_api_keys(cls, value: dict[str, str]) -> dict[str, str]:
         for tenant_id in value.values():
-            if not tenant_id or len(tenant_id) > 128:
-                raise ValueError("API_KEYS tenant identifiers must contain 1 to 128 characters")
+            if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,127}", tenant_id):
+                raise ValueError(
+                    "API_KEYS tenant identifiers must use 1-128 letters, numbers, dots, "
+                    "underscores, or hyphens"
+                )
         return value
 
     @model_validator(mode="after")
