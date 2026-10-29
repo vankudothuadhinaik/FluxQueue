@@ -5,7 +5,7 @@
 
 A durable job-processing platform built with FastAPI, SQLAlchemy, and PostgreSQL.
 
-> **Current status (2026-10-30):** Docker-first local staging passed. Free-tier demo deployment is available at [fluxqueue-api.onrender.com](https://fluxqueue-api.onrender.com), backed by a dedicated Neon PostgreSQL project in Singapore. The API container can run the worker alongside the API via `RUN_WORKER=true`, suitable for a small demo. CI passed all four jobs for latest code commit `4b9dec8` in [run 40939078055](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40939078055). Free-tier services may sleep and have usage limits; this is not a production availability guarantee. The PR remains open and unmerged.
+> **Current status (2026-10-30):** The free-tier demo deployment is live at [fluxqueue-api.onrender.com](https://fluxqueue-api.onrender.com), backed by a dedicated Neon PostgreSQL project in Singapore. CI checks and the manual deployment smoke test have been reported green; the smoke workflow exercises API liveness/readiness and an authenticated echo job through worker completion. The API container can also run the worker alongside the API via `RUN_WORKER=true`. Free-tier services may sleep and have usage limits; this is a demo deployment, not a production availability guarantee. PR #17 remains open and unmerged.
 
 ## Current capabilities
 
@@ -171,7 +171,7 @@ Codecov upload activates when the repository Actions secret `CODECOV_TOKEN` is c
 
 ## CI status and latest verification
 
-The latest verified CI run for PR #17 is [40938441694](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40938441694), for commit `6535330` on `feat/doppler-integration`. All four jobs passed:
+The latest recorded CI run for PR #17 is [40938441694](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40938441694), for commit `6535330` on `feat/doppler-integration`; all four jobs passed. The PR branch also includes a manually triggered deployment smoke workflow at [deployment-smoke.yml](.github/workflows/deployment-smoke.yml). The repository owner reports its checks are green:
 
 - `test`: compilation, migration checks, Ruff, unit/API tests, Compose and Doppler wiring validation, Docker build, non-root check, container smoke test, and Codecov upload. The workflow also syntax-checks the example Nginx configuration with a temporary self-signed certificate; this does not verify a real certificate, public TLS, or live proxy routing.
 - `postgres-integration`: PostgreSQL migration, locking, and lease-fencing checks.
@@ -186,14 +186,14 @@ The Docker-first local staging run and its detailed checks are recorded above an
 
 - Confirm Codecov credential rotation/revocation in provider settings; the replacement upload succeeded in CI, but secret values cannot be read back through GitHub.
 - Validate Nginx syntax, certificates, TLS negotiation, and proxy behavior in an authorized disposable environment. The example is a starting point; `limit_req_zone` belongs in the Nginx `http {}` context.
-- Verify managed PostgreSQL TLS, network restrictions, least-privilege credentials, backup restoration, and migration rollback against production-like data.
+- Verify managed PostgreSQL network restrictions and least-privilege credentials; test backup restoration and migration rollback against production-like data. Neon automatic snapshot scheduling is not enabled for this project, so a manual snapshot exists but automated backup scheduling is not configured.
 - Exercise database outages, worker termination during handlers, lease expiry, retry exhaustion, and restart recovery.
 - Verify idempotency for every external side-effecting handler.
 - Configure and verify operational metrics, structured logs, alerts, on-call ownership, resource limits, log retention, and rollback procedures.
 - Run controlled load and soak tests; record throughput, latency percentiles, worker concurrency, and database utilization.
 - Implement and test API-key rotation/revocation workflow; self-service key management is not implemented.
 
-Track evidence in [deployment readiness](docs/deployment-readiness.md). A free-tier demo deployment is provisioned on Render with a dedicated Neon PostgreSQL project; it is not production staging. Free-tier sleep/usage limits, a combined API/worker process, and the remaining deployment-owner gates above still apply. PR #17 remains open and unmerged.
+Track evidence in [deployment readiness](docs/deployment-readiness.md). A free-tier demo deployment is provisioned on Render with a dedicated Neon PostgreSQL project; the smoke test is reported green, but the deployment is not production staging. Free-tier sleep/usage limits and the remaining deployment-owner gates above still apply. PR #17 remains open and unmerged.
   
 ## License
 
