@@ -27,15 +27,11 @@ The validated smoke path also checks missing/invalid authentication, harmless jo
 
 ## Codecov
 
-The repository includes `.codecov.yml` and generates `coverage.xml` in GitHub Actions. The workflow uses the official Codecov Action and authenticates with the repository Actions secret `CODECOV_TOKEN`.
+The repository includes `.codecov.yml` and generates `coverage.xml` in GitHub Actions. The workflow uses the official Codecov Action and reads the upload token from the repository Actions secret `CODECOV_TOKEN`.
 
-**Current verification status: PASS (2026-10-30).** GitHub Actions run [40935078574](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40935078574) successfully uploaded coverage for final PR head `3d848ea` after the repository upload token was regenerated and the GitHub Actions `CODECOV_TOKEN` secret was updated. Keep the token in GitHub Actions secrets only; never commit or paste it into logs, source, or documentation.
+**Verified:** the final documentation commit `78f89b0` passed CI in [run 40936739361](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40936739361), including the Codecov upload step. The earlier upload failure was resolved after the owner regenerated the repository upload token and updated the GitHub Actions secret.
 
-The upload was verified in GitHub Actions run [40882641655](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40882641655): Codecov found `coverage.xml`, accepted the 3.6 KB upload, and reported **“Upload queued for processing complete.”** The report was queued for processing and can be viewed at the [Codecov commit report](https://app.codecov.io/github/vankudothuadhinaik/fluxqueue/commit/f5f6d93ee5212900ead0cfd9a79aa100d2ac91c5).
-
-Keep the token only in GitHub Actions secrets; never commit it or paste it into source files, issues, or chat. The owner regenerated the Codecov repository upload token and updated the GitHub Actions secret. The successful upload in run [40928314514](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40928314514) confirms the current secret works. A token was visible in a screenshot during troubleshooting; the owner regenerated it afterward. Treat all previously shown tokens as revoked and do not expose the current token. GitHub secret values cannot be read back through the GitHub connection. Official guidance: https://github.com/codecov/codecov-action.
-
-Codecov verification is **PASS** on the final commit in [run 40935078574](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40935078574). The protected-branch coverage upload completed successfully after token rotation.
+Keep the token in GitHub Actions secrets only. Never commit, log, or paste secret values. A successful upload verifies the upload path works; it does not independently prove that any previously exposed credential has been revoked. Confirm revocation in Codecov/GitHub settings if that confirmation has not already been made. GitHub does not return stored secret values through the repository connection.
 
 ## Doppler
 
