@@ -151,3 +151,26 @@ def test_sdk_wraps_network_errors(monkeypatch):
     monkeypatch.setattr(sdk, "urlopen", fail_urlopen)
     with pytest.raises(FluxQueueError, match="Unable to reach"):
         FluxQueueClient("http://localhost", "key").get_job("job-1")
+
+
+
+def test_sdk_requires_https_for_non_local_hosts():
+    with pytest.raises(ValueError, match="HTTPS is required"):
+        FluxQueueClient("http://api.example.com", "secret")
+    assert FluxQueueClient("https://api.example.com", "secret")
+    assert FluxQueueClient("http://127.0.0.1:8000", "local-key")
+
+
+@pytest.mark.parametrize(
+    "base_url",
+    [
+        "ftp://localhost",
+        "/relative/path",
+        "https://user:password@example.com",
+        "https://example.com/path?token=secret",
+        "https://example.com/#fragment",
+    ],
+)
+def test_sdk_rejects_unsafe_or_invalid_base_urls(base_url):
+    with pytest.raises(ValueError):
+        FluxQueueClient(base_url, "secret")
