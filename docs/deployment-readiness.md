@@ -8,7 +8,8 @@ FluxQueue is an early-stage job queue. Passing CI is necessary, but it does not 
 - [ ] Set `APP_ENV=production`; verify startup fails when both `API_KEY` and `API_KEYS` are absent.
 - [ ] Use managed PostgreSQL with TLS, backups, restricted network access, and a least-privilege database role.
 - [ ] Replace all local-only database credentials; do not commit `.env` files or secrets.
-- [ ] Restrict ingress to the intended private network or trusted reverse proxy. Terminate TLS at a configured proxy/load balancer.
+- [ ] Restrict ingress to the intended private network or trusted reverse proxy. Terminate TLS at a configured proxy/load balancer and enable HSTS there after HTTPS is confirmed.
+- [ ] Keep Compose development ports bound to loopback unless intentionally exposing them; review security headers and proxy forwarding settings.
 - [ ] Keep the container running as UID/GID `10001:10001`; do not mount writable host paths unless required.
 - [ ] Configure CPU/memory limits, restart policy, log retention, and a disk/connection budget.
 - [ ] Confirm `/health/live` and `/health/ready` are reachable by the platform health checker, but do not expose administrative or database access publicly.
