@@ -5,7 +5,7 @@
 
 A durable job-processing platform built with FastAPI, SQLAlchemy, and PostgreSQL.
 
-> **Current status (2026-10-30):** Docker-first local staging passed, and final CI for PR #17 passed at [run 40934791341](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40934791341), head `dcde57b`. Test, Codecov, PostgreSQL integration, dependency audit, CodeQL, and CodeScene all passed. The PR remains open and unmerged while production-readiness gates below are verified; CI success alone does not establish production readiness.
+> **Current status (2026-10-30):** Docker-first local staging passed, and final CI for PR #17 passed at [run 40935078574](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40935078574), head `3d848ea`. Test, Codecov, PostgreSQL integration, dependency audit, CodeQL, and CodeScene all passed. The PR remains open and unmerged while production-readiness gates below are verified; CI success alone does not establish production readiness.
 
 ## Current capabilities
 
