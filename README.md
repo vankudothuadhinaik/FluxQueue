@@ -13,7 +13,7 @@ A durable job-processing platform built with FastAPI, SQLAlchemy, and PostgreSQL
 - Tenant-scoped API keys and tenant-isolated job reads, listings, cancellation, queue counts, and idempotency keys. When `API_KEYS` is non-empty, it takes precedence over the legacy single-tenant `API_KEY`.
 - Job retrieval, filtering, pagination, queue counts, and cancellation.
 - Separate worker process with registered handlers: `echo`, `add_numbers`, and `uppercase`.
-- Lease expiry/reclaim, heartbeat renewal, stale-token fencing, bounded exponential retry, and terminal `dead` state.
+- Lease expiry/reclaim, heartbeat renewal, stale-token fencing, bounded exponential retry, terminal `dead` state, and payload-free worker lifecycle logs.
 - Non-root API/worker container, Alembic migrations, Docker Compose, SQLite unit/API tests, PostgreSQL concurrency integration tests, container startup/auth smoke checks, Ruff, CodeQL, automated dependency auditing, Dependabot, and optional Codecov.
 
 ## Quick start
