@@ -65,8 +65,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.timeout <= 0:
         parser.error("--timeout must be greater than zero")
 
-    client = FluxQueueClient(args.base_url, args.api_key, timeout=args.timeout)
     try:
+        client = FluxQueueClient(args.base_url, args.api_key, timeout=args.timeout)
         if args.command == "submit":
             result = client.submit(_load_job(args), idempotency_key=args.idempotency_key)
         elif args.command == "get":
