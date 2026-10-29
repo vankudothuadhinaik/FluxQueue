@@ -3,7 +3,9 @@
 ## Current implementation
 
 - Enqueue commits before returning the accepted job.
-- Requests are schema-validated and queue-scoped idempotency keys reject changed payloads with HTTP 409.
+- Requests are schema-validated; serialized job payloads are capped at 64 KiB.
+- Queue-scoped idempotency keys reject changed payloads with HTTP 409.
+- When configured, a shared bearer API key protects job/queue routes; production configuration requires it.
 - The worker claims eligible jobs with a lease token, increments attempt count, and renews leases with a heartbeat.
 - Success and failure updates require the current lease token, so an old worker cannot overwrite a newer claim.
 - Retryable failures use bounded exponential backoff with jitter; exhausted jobs become `dead`.
