@@ -14,9 +14,9 @@ The repository includes `.codecov.yml` and generates `coverage.xml` in GitHub Ac
 
 The upload was verified in GitHub Actions run [40882641655](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40882641655): Codecov found `coverage.xml`, accepted the 3.6 KB upload, and reported **“Upload queued for processing complete.”** The report was queued for processing and can be viewed at the [Codecov commit report](https://app.codecov.io/github/vankudothuadhinaik/fluxqueue/commit/f5f6d93ee5212900ead0cfd9a79aa100d2ac91c5).
 
-Keep the token only in GitHub Actions secrets; never commit it or paste it into source files, issues, or chat. Because the token appeared in a screenshot shared during setup, rotate/regenerate it in Codecov and replace the `CODECOV_TOKEN` repository secret with the new value. Then rerun CI to verify the rotated token works. Official guidance: https://github.com/codecov/codecov-action
+Keep the token only in GitHub Actions secrets; never commit it or paste it into source files, issues, or chat. The repository owner reports that `CODECOV_TOKEN` has been updated in GitHub repository secrets. The test job was rerun on commit `96604cefc04b51d819e0da7faccc2460c570f136`, and the `Upload coverage to Codecov` step completed successfully in run [40923030906](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40923030906). This verifies that the configured secret permits the upload; it does not independently prove the old credential was revoked in Codecov, so confirm revocation in the Codecov account if not already done. Official guidance: https://github.com/codecov/codecov-action
 
-The final PR check on commit `81b567b413a744044528af75d19d6772d19194aa` also passed Codecov's patch check: [Codecov patch check](https://github.com/vankudothuadhinaik/FluxQueue/runs/123521397956). This proves the upload/check succeeded, but does not prove that the exposed credential was rotated; that remains an account-owner action unless the replacement is separately verified.
+The latest Codecov upload step passed on commit `96604cefc04b51d819e0da7faccc2460c570f136` in [CI run 40923030906](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40923030906). The repository owner reports the GitHub `CODECOV_TOKEN` secret was updated. This CI evidence confirms the configured secret works for upload; revocation of the previously exposed token must be confirmed in Codecov itself.
 
 ## Doppler
 
@@ -91,9 +91,9 @@ Copilot and Codex are development assistants, not runtime dependencies. Keep the
 
 ## Current integration status
 
-- GitHub Actions: configured; final PR CI run [40922788784](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40922788784) passed all four jobs on commit `87bfda6`.
-- CodeQL and Python dependency audit: passed in the final PR CI run above ([security](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40922788784/job/123620215952), [dependency audit](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40922788784/job/123620217165)).
-- Codecov: coverage upload was accepted and queued for processing in run [40882641655](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40882641655). The token exposed in the setup screenshot should be rotated and `CODECOV_TOKEN` updated; do not claim rotation is verified until a run succeeds with the replacement token.
+- GitHub Actions: configured; latest PR CI run [40923030906](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40923030906) passed all four jobs on commit `96604cefc04b51d819e0da7faccc2460c570f136`.
+- CodeQL and Python dependency audit: passed in the latest PR CI run above. CodeQL SARIF is archived as an artifact; workflow success does not mean alerts were uploaded to GitHub code scanning because upload is disabled.
+- Codecov: upload step passed in the latest CI run [40923030906](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40923030906) after the repository owner reported updating `CODECOV_TOKEN`. Confirm the old token is revoked in Codecov itself.
 - Doppler: an authenticated local CLI check confirmed project `fluxqueue`, config `dev`, and secret injection; CI validates service wiring without requiring a Doppler token.
 - CodeScene: PR integration is active; the final review on PR #17 passed ([CodeScene check](https://github.com/vankudothuadhinaik/FluxQueue/runs/123620182360), [analysis result](https://codescene.io/projects/87037/delta/results/8195097)).
 - Render/other deployment: no production service is created by these files. Deploying a public service requires a deliberate environment, database, and cost decision.
