@@ -9,6 +9,7 @@ Report vulnerabilities privately to the repository owner; do not publish exploit
 - Never accept shell commands, import paths, or executable code as job payloads.
 - The API limits serialized job payloads to 64 KiB; also enforce request-body limits at the proxy/edge.
 - Never commit credentials, tokens, local environment files, or database files.
+- The Docker image runs as a non-root UID; retain that restriction in deployment overrides.
 - Replace local-only database passwords before shared use.
 - Keep operational endpoints behind authentication when they are added.
 
