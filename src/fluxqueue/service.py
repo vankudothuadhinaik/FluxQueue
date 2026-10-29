@@ -50,7 +50,7 @@ def enqueue(session: Session, data: JobCreate, idempotency_key: str | None) -> J
     session.add(job)
     try:
         session.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         session.rollback()
         if idempotency_key:
             existing = session.scalar(
@@ -61,7 +61,7 @@ def enqueue(session: Session, data: JobCreate, idempotency_key: str | None) -> J
             )
             if existing and existing.payload_fingerprint == digest:
                 return existing
-        raise HTTPException(status_code=409, detail="Conflicting idempotency key")
+        raise HTTPException(status_code=409, detail="Conflicting idempotency key") from exc
     session.refresh(job)
     return job
 
