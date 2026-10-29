@@ -29,6 +29,8 @@ class Job(Base):
     __table_args__ = (
         UniqueConstraint("queue_name", "idempotency_key", name="uq_jobs_queue_idempotency"),
         Index("ix_jobs_queue_status_created", "queue_name", "status", "created_at"),
+        Index("ix_jobs_status_run_at", "status", "run_at"),
+        Index("ix_jobs_status_lease_expiry", "status", "lease_expires_at"),
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
@@ -43,6 +45,10 @@ class Job(Base):
     payload_fingerprint: Mapped[str | None] = mapped_column(String(64), nullable=True)
     result_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    run_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    locked_by: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    lease_token: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    lease_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
