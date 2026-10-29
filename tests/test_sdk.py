@@ -127,6 +127,17 @@ def test_sdk_rejects_invalid_constructor_settings():
         FluxQueueClient("http://localhost", "key", timeout=0)
 
 
+@pytest.mark.parametrize("timeout", [float("nan"), float("inf"), float("-inf")])
+def test_sdk_rejects_non_finite_timeouts(timeout):
+    with pytest.raises(ValueError, match="finite"):
+        FluxQueueClient("http://localhost", "key", timeout=timeout)
+
+
+def test_sdk_rejects_invalid_url_port():
+    with pytest.raises(ValueError, match="valid port"):
+        FluxQueueClient("https://example.com:not-a-port", "key")
+
+
 def test_sdk_encodes_job_identifier_as_one_path_segment(monkeypatch):
     captured = {}
 
