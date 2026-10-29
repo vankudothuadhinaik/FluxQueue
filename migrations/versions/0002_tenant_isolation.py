@@ -17,11 +17,7 @@ def upgrade() -> None:
         return
 
     columns = {column["name"] for column in inspector.get_columns("jobs")}
-    constraints = {
-        constraint.get("name")
-        for constraint in inspector.get_unique_constraints("jobs")
-    }
-    indexes = {index["name"] for index in inspector.get_indexes("jobs")}
+    constraints = {constraint.get("name") for constraint in inspector.get_unique_constraints("jobs")}
 
     if "tenant_id" not in columns:
         with op.batch_alter_table("jobs") as batch:
