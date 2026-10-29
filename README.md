@@ -57,6 +57,11 @@ Codecov upload runs when the repository Actions secret `CODECOV_TOKEN` is config
 
 A job queue alone cannot guarantee exactly-once external effects. A worker may perform an external action and crash before acknowledging success. Side-effecting handlers must be idempotent. See `docs/architecture.md`, `docs/failure-model.md`, and `SECURITY.md`.
 
+
+## Current project status
+
+The initial API foundation is committed. The latest observable Actions runs have not yet produced a successful CI result; inspect the [Actions page](https://github.com/vankudothuadhinaik/FluxQueue/actions) before treating a change as verified. Worker execution, migrations, authentication, and production hardening are still required before any public deployment.
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
