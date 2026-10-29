@@ -5,7 +5,7 @@ Report vulnerabilities privately to the repository owner; do not publish exploit
 ## Current security boundaries
 
 - This is an early-stage API; do not expose it to the public internet.
-- Protected job/queue routes derive tenant identity from the authenticated bearer key. Configure `API_KEYS` as a JSON mapping from high-entropy API keys to tenant identifiers; the legacy `API_KEY` maps all callers to the `default` tenant and is for single-tenant use only. Production configuration requires `API_KEYS` or `API_KEY`.
+- Protected job/queue routes derive tenant identity from the authenticated bearer key. Configure `API_KEYS` as a JSON mapping from high-entropy API keys to tenant identifiers; the legacy `API_KEY` maps all callers to the `default` tenant and is for single-tenant use only. Production configuration requires `API_KEYS` or `API_KEY`; when `API_KEYS` is non-empty, it takes precedence and the legacy key is ignored.
 - Never accept shell commands, import paths, or executable code as job payloads.
 - The API limits serialized job payloads to 64 KiB; also enforce request-body limits at the proxy/edge.
 - Never commit credentials, tokens, local environment files, or database files.
