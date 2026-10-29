@@ -10,10 +10,12 @@ upstream fluxqueue_api {
 server {
     listen 443 ssl;
     server_name fluxqueue.example.com;
+    server_tokens off;
 
     # Replace with certificates provisioned by your TLS/certificate manager.
     ssl_certificate /etc/letsencrypt/live/fluxqueue.example.com/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/fluxqueue.example.com/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
 
     client_max_body_size 128k;
     add_header Strict-Transport-Security "max-age=31536000" always;
