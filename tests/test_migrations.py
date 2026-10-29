@@ -1,7 +1,8 @@
 """Regression tests for upgrading existing job data to tenant isolation."""
 
-import importlib
+import importlib.util
 from datetime import UTC, datetime
+from pathlib import Path
 
 from alembic.migration import MigrationContext
 from alembic.operations import Operations
@@ -74,7 +75,16 @@ def test_tenant_migration_preserves_existing_jobs_and_scopes_idempotency():
             )
         )
         context = MigrationContext.configure(connection)
-        migration = importlib.import_module("migrations.versions.0002_tenant_isolation")
+        migration_path = (
+            Path(__file__).resolve().parents[1]
+            / "migrations"
+            / "versions"
+            / "0002_tenant_isolation.py"
+        )
+        spec = importlib.util.spec_from_file_location("tenant_migration", migration_path)
+        assert spec is not None and spec.loader is not None
+        migration = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(migration)
         with Operations.context(context):
             migration.upgrade()
 
