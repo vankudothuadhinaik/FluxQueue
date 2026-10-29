@@ -155,7 +155,7 @@ Codecov upload activates when the repository Actions secret `CODECOV_TOKEN` is c
 
 ## CI status and latest verification
 
-CI runs on pushes, pull requests, and a weekly schedule. The latest pre-hardening run for PR #17 is [run 40926045141](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40926045141), associated with commit `ab303b1`. Core jobs and CodeScene passed, but Codecov processing failed because the protected-branch upload did not accept the configured secret. The workflow now treats that failure as blocking and publishes CodeQL SARIF when supported:
+CI runs on pushes, pull requests, and a weekly schedule. The latest run for PR #17 is [run 40927562025](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40927562025) on commit `6890964`. Core test and container checks, PostgreSQL integration, dependency audit, CodeQL analysis, and CodeScene pass, but Codecov fails because the protected-branch upload rejects the configured token. The workflow now treats that failure as blocking and publishes CodeQL SARIF when supported:
 
 - `test`: compilation, fresh/upgrade migration checks, Ruff, unit/API tests, Compose and Doppler wiring validation, container build/non-root check, protected-route smoke test, and fail-fast Codecov upload.
 - `postgres-integration`: PostgreSQL migration, locking, and lease-fencing checks.
