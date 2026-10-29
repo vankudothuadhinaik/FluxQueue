@@ -2,11 +2,11 @@
 
 import json
 from io import BytesIO
-from urllib.error import HTTPError
+from urllib.error import HTTPError, URLError
 
 import pytest
 
-from fluxqueue import sdk
+from fluxqueue import cli, sdk
 from fluxqueue.cli import main
 from fluxqueue.sdk import FluxQueueClient, FluxQueueError
 
@@ -83,11 +83,11 @@ def test_sdk_surfaces_http_status_and_body(monkeypatch):
 
 
 def test_cli_submit_prints_json(monkeypatch, capsys):
-    from fluxqueue import cli
-
-    monkeypatch.setattr(cli, "_load_job", lambda args: {
-        "task_type": "echo", "payload": {"message": "hello"}
-    })
+    monkeypatch.setattr(
+        cli,
+        "_load_job",
+        lambda args: {"task_type": "echo", "payload": {"message": "hello"}},
+    )
 
     class FakeClient:
         def __init__(self, *args, **kwargs):
@@ -98,7 +98,15 @@ def test_cli_submit_prints_json(monkeypatch, capsys):
 
     monkeypatch.setattr(cli, "FluxQueueClient", FakeClient)
     assert (
-        main(["--api-key", "key", "submit", "--json", '{"task_type":"echo","payload":{}}'])
+        main(
+            [
+                "--api-key",
+                "key",
+                "submit",
+                "--json",
+                '{"task_type":"echo","payload":{}}',
+            ]
+        )
         == 0
     )
     assert json.loads(capsys.readouterr().out)["id"] == "job-2"
@@ -108,7 +116,6 @@ def test_cli_reports_missing_api_key():
     with pytest.raises(SystemExit) as exc:
         main(["list"])
     assert exc.value.code == 2
-
 
 
 def test_sdk_rejects_invalid_constructor_settings():
@@ -129,7 +136,26 @@ def test_sdk_encodes_job_identifier_as_one_path_segment(monkeypatch):
 
     monkeypatch.setattr(sdk, "urlopen", fake_urlopen)
     FluxQueueClient("http://localhost", "key").get_job("../admin?x=1")
-    assert captured["url"] == "http://localhost/api/v1/jobs/..%2Fadmin%3Fx%3D1"
+    assert captured["url"] == (
+        "http://localhost/api/v1/jobs/..%2Fadmin%3Fx%3D1"
+    )
+
+
+def test_sdk_cancel_encodes_job_identifier_as_one_path_segment(monkeypatch):
+    captured = {}
+
+    def fake_urlopen(request, timeout):
+        captured["url"] = request.full_url
+        captured["method"] = request.method
+        return FakeResponse({"id": "safe", "status": "cancelled"})
+
+    monkeypatch.setattr(sdk, "urlopen", fake_urlopen)
+    result = FluxQueueClient("http://localhost", "key").cancel_job("../job?x=1")
+    assert result["status"] == "cancelled"
+    assert captured["method"] == "POST"
+    assert captured["url"] == (
+        "http://localhost/api/v1/jobs/..%2Fjob%3Fx%3D1/cancel"
+    )
 
 
 def test_sdk_rejects_non_json_success_response(monkeypatch):
@@ -143,15 +169,12 @@ def test_sdk_rejects_non_json_success_response(monkeypatch):
 
 
 def test_sdk_wraps_network_errors(monkeypatch):
-    from urllib.error import URLError
-
     def fail_urlopen(request, timeout):
         raise URLError("offline")
 
     monkeypatch.setattr(sdk, "urlopen", fail_urlopen)
     with pytest.raises(FluxQueueError, match="Unable to reach"):
         FluxQueueClient("http://localhost", "key").get_job("job-1")
-
 
 
 def test_sdk_requires_https_for_non_local_hosts():
