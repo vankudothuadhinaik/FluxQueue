@@ -13,7 +13,7 @@ flowchart LR
   API --> Ops[Health and OpenAPI]
 ```
 
-The API supports enqueue, retrieval, filtering, pagination, queue counts, cancellation of queued/retry-wait jobs, liveness, and readiness. The worker currently registers `echo`, `add_numbers`, and `uppercase`; unknown task names fail through the retry/dead-letter lifecycle rather than being dynamically imported or executed.
+The API supports enqueue with a 64 KiB serialized-payload limit, retrieval, filtering, pagination, queue counts, cancellation of queued/retry-wait jobs, liveness, and readiness. A shared bearer API key can protect job/queue routes. The worker currently registers `echo`, `add_numbers`, and `uppercase`; unknown task names fail through the retry/dead-letter lifecycle rather than being dynamically imported or executed.
 
 ## Claim and lease protocol
 
