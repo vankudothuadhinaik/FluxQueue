@@ -10,11 +10,11 @@ JUnit test results and coverage XML are uploaded as workflow artifacts when avai
 
 ## Codecov
 
-The repository includes `.codecov.yml` and generates `coverage.xml` in GitHub Actions. The workflow uses the official Codecov Action with GitHub OIDC (`use_oidc: true`) and grants the test job only the `id-token: write` permission needed for that authentication flow. This avoids storing a long-lived `CODECOV_TOKEN` secret in GitHub.
+The repository includes `.codecov.yml` and generates `coverage.xml` in GitHub Actions. The workflow uses the official Codecov Action and authenticates with the repository Actions secret `CODECOV_TOKEN`.
 
-The latest upload attempt successfully obtained an OIDC token and verified the Codecov uploader, but Codecov rejected the upload with `Repository not found`. This means the upload pipeline is wired, but the repository still needs to be enabled/connected in the Codecov account and the Codecov GitHub App must have access to this private repository. Open the [FluxQueue Codecov project](https://app.codecov.io/gh/vankudothuadhinaik/FluxQueue) while signed in with the GitHub account that owns the repository, and complete repository setup / GitHub App access if prompted. Then rerun the latest workflow to verify that coverage is accepted.
+The upload was verified in GitHub Actions run [40882641655](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40882641655): Codecov found `coverage.xml`, accepted the 3.6 KB upload, and reported **“Upload queued for processing complete.”** The report is queued for processing and can be viewed at the [Codecov commit report](https://app.codecov.io/github/vankudothuadhinaik/fluxqueue/commit/f5f6d93ee5212900ead0cfd9a79aa100d2ac91c5).
 
-The upload remains non-blocking until Codecov confirms the repository is configured. Never commit a Codecov token or put credentials in source files. Official guidance: https://github.com/codecov/codecov-action#using-oidc
+Keep the token only in GitHub Actions secrets; never commit it or paste it into source files, issues, or chat. Because the token appeared in a screenshot shared during setup, rotate/regenerate it in Codecov and replace the `CODECOV_TOKEN` repository secret with the new value. Then rerun CI to verify the rotated token works. Official guidance: https://github.com/codecov/codecov-action
 
 ## Doppler
 
@@ -42,7 +42,7 @@ Copilot and Codex are development assistants, not runtime dependencies. Keep the
 - GitHub Actions workflows and report artifacts: configured in source.
 - CodeQL: configured in the CI workflow; result must be checked on the actual run.
 - Python dependency audit: configured in the CI workflow; result must be checked on the actual run.
-- Codecov: uploader/configuration ready; requires the repository's `CODECOV_TOKEN` secret to publish coverage.
+- Codecov: coverage upload accepted and queued for processing in run [40882641655](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40882641655); rotate the token exposed in the setup screenshot, update `CODECOV_TOKEN`, and rerun CI.
 - Doppler: repository mapping ready; requires a matching Doppler project/config and authenticated CLI or deployment service token.
 - CodeScene: requires the repository to be connected and analyzed in the CodeScene workspace.
 - Render/other deployment: no production service is created by these files. Deploying a public service requires a deliberate environment, database, and cost decision.
