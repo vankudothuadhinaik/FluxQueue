@@ -4,8 +4,8 @@
 
 - Enqueue commits before returning the accepted job.
 - Requests are schema-validated; serialized job payloads are capped at 64 KiB.
-- Queue-scoped idempotency keys reject changed payloads with HTTP 409.
-- When configured, a shared bearer API key protects job/queue routes; production configuration requires it.
+- Tenant-and-queue-scoped idempotency keys return the original job for the same request and reject changed payloads with HTTP 409.
+- Bearer API keys map to tenant identities when `API_KEYS` is configured; every job lookup/list/cancel, queue aggregate, and idempotency lookup is tenant-scoped. The legacy `API_KEY` maps to the `default` tenant for single-tenant deployments. Production configuration requires at least one key.
 - The worker claims eligible jobs with a lease token, increments attempt count, and renews leases with a heartbeat.
 - Success and failure updates require the current lease token, so an old worker cannot overwrite a newer claim.
 - Retryable failures use bounded exponential backoff with jitter; exhausted jobs become `dead`.
@@ -23,5 +23,5 @@ Execution is at-least-once, not exactly-once. A handler can perform an external 
 - SQLite does not provide PostgreSQL's row-level `SKIP LOCKED` semantics; use PostgreSQL for concurrent worker deployments.
 - PostgreSQL CI integration tests exercise row-lock skipping, concurrent claims, lease reclamation, and stale-token fencing. Process termination and database-restart fault injection remain outstanding.
 - Keep migration upgrade/downgrade checks green against fresh and existing schemas (covered by CI migration steps).
-- Add per-tenant authorization, rate limiting, production secret handling, and operational controls before public deployment. The serialized payload size cap is already implemented and covered by API tests.
+- Rate limiting, per-tenant quotas, key rotation/revocation, production secret handling, and operational controls remain required before public deployment. The serialized payload size cap is implemented and covered by API tests.
 - Run reproducible throughput/latency tests before making performance claims.
