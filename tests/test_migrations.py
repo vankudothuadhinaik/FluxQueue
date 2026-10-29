@@ -6,18 +6,18 @@ from datetime import UTC, datetime
 from alembic.migration import MigrationContext
 from alembic.operations import Operations
 from sqlalchemy import (
-    JSON,
     Column,
     DateTime,
     Integer,
+    JSON,
     MetaData,
     String,
     Table,
+    UniqueConstraint,
     create_engine,
     inspect,
     select,
     text,
-    UniqueConstraint,
 )
 
 
@@ -81,14 +81,17 @@ def test_tenant_migration_preserves_existing_jobs_and_scopes_idempotency():
         inspector = inspect(connection)
         columns = {column["name"] for column in inspector.get_columns("jobs")}
         assert "tenant_id" in columns
-        constraints = {item.get("name") for item in inspector.get_unique_constraints("jobs")}
+        constraints = {
+            item.get("name") for item in inspector.get_unique_constraints("jobs")
+        }
         assert "uq_jobs_tenant_queue_idempotency" in constraints
         assert "uq_jobs_queue_idempotency" not in constraints
 
         row = connection.execute(select(jobs.c.id, jobs.c.payload)).one()
         assert row.id == "legacy-job"
         assert row.payload == {"message": "keep me"}
-        assert connection.execute(text("SELECT tenant_id FROM jobs")).scalar_one() == "default"
+        tenant_id = connection.execute(text("SELECT tenant_id FROM jobs")).scalar_one()
+        assert tenant_id == "default"
 
         with Operations.context(context):
             migration.downgrade()
