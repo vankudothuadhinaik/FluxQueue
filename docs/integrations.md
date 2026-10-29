@@ -72,7 +72,7 @@ CodeScene must be connected through its workspace and GitHub integration; do not
 
 If FluxQueue is not listed, check which GitHub account is connected to CodeScene and whether the CodeScene Access app installation includes this repository. Private repository analysis may depend on the CodeScene plan. Do not create a custom GitHub App or store a private key unless the CodeScene setup flow specifically requires it.
 
-**Verification status:** CodeScene is not yet confirmed active. The repository has no verified CodeScene analysis or PR check in the CI evidence available to this project. Mark this integration complete only after the workspace shows a successful FluxQueue analysis (and a PR check, if enabled).
+**Verification status (2026-10-29):** The FluxQueue project dashboard shows a successful analysis dated October 29, 2026, with average code health 9.4 and hotspot code health 9.6. The dashboard still offers “Set up PR integration,” and GitHub's latest PR check-run list does not contain a CodeScene check. Treat analysis as verified, but PR checks as pending until a CodeScene check/review appears on a pull request.
 
 Official references:
 - [CodeScene getting started](https://codescene.io/docs/getting-started/index.html)
@@ -85,9 +85,9 @@ Copilot and Codex are development assistants, not runtime dependencies. Keep the
 
 ## Current integration status
 
-- GitHub Actions: configured; latest PR CI run [40888695203](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40888695203) passed all four jobs.
+- GitHub Actions: configured; latest PR CI run [40889069383](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40889069383) passed all four jobs on commit `cfb7b56`.
 - CodeQL and Python dependency audit: passed in the latest PR CI run above.
 - Codecov: coverage upload was accepted and queued for processing in run [40882641655](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40882641655). The token exposed in the setup screenshot should be rotated and `CODECOV_TOKEN` updated; do not claim rotation is verified until a run succeeds with the replacement token.
 - Doppler: project/config injection was reported verified in the PR's local smoke test; CI validates service wiring without requiring a Doppler token.
-- CodeScene: setup instructions are documented, but the account-side repository connection and successful analysis remain unverified.
+- CodeScene: initial FluxQueue analysis is confirmed in the workspace dashboard; GitHub pull-request checks remain unverified/pending.
 - Render/other deployment: no production service is created by these files. Deploying a public service requires a deliberate environment, database, and cost decision.
