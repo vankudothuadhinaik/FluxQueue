@@ -1,4 +1,4 @@
-"""Job operations and idempotency rules."""
+"""Job operations and tenant-scoped idempotency rules."""
 
 import hashlib
 import json
@@ -24,11 +24,17 @@ def fingerprint(data: JobCreate) -> str:
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
-def enqueue(session: Session, data: JobCreate, idempotency_key: str | None) -> Job:
+def enqueue(
+    session: Session,
+    data: JobCreate,
+    idempotency_key: str | None,
+    tenant_id: str = "default",
+) -> Job:
     digest = fingerprint(data)
     if idempotency_key:
         existing = session.scalar(
             select(Job).where(
+                Job.tenant_id == tenant_id,
                 Job.queue_name == data.queue,
                 Job.idempotency_key == idempotency_key,
             )
@@ -43,6 +49,7 @@ def enqueue(session: Session, data: JobCreate, idempotency_key: str | None) -> J
 
     now = datetime.now(UTC)
     job = Job(
+        tenant_id=tenant_id,
         queue_name=data.queue,
         task_type=data.task_type,
         payload=data.payload,
@@ -60,6 +67,7 @@ def enqueue(session: Session, data: JobCreate, idempotency_key: str | None) -> J
         if idempotency_key:
             existing = session.scalar(
                 select(Job).where(
+                    Job.tenant_id == tenant_id,
                     Job.queue_name == data.queue,
                     Job.idempotency_key == idempotency_key,
                 )
@@ -71,8 +79,8 @@ def enqueue(session: Session, data: JobCreate, idempotency_key: str | None) -> J
     return job
 
 
-def get_job(session: Session, job_id: str) -> Job:
-    job = session.get(Job, job_id)
+def get_job(session: Session, job_id: str, tenant_id: str = "default") -> Job:
+    job = session.scalar(select(Job).where(Job.id == job_id, Job.tenant_id == tenant_id))
     if job is None:
         raise HTTPException(status_code=404, detail="Job not found")
     return job
@@ -85,9 +93,10 @@ def list_jobs(
     queue: str | None,
     limit: int,
     offset: int,
+    tenant_id: str = "default",
 ) -> JobPage:
-    query = select(Job)
-    count_query = select(func.count()).select_from(Job)
+    query = select(Job).where(Job.tenant_id == tenant_id)
+    count_query = select(func.count()).select_from(Job).where(Job.tenant_id == tenant_id)
     if status:
         query = query.where(Job.status == status)
         count_query = count_query.where(Job.status == status)
@@ -101,12 +110,13 @@ def list_jobs(
     return JobPage(items=list(items), total=total)
 
 
-def cancel_queued_job(session: Session, job_id: str) -> Job:
+def cancel_queued_job(session: Session, job_id: str, tenant_id: str = "default") -> Job:
     now = datetime.now(UTC)
     result = session.execute(
         update(Job)
         .where(
             Job.id == job_id,
+            Job.tenant_id == tenant_id,
             Job.status.in_([JobStatus.QUEUED.value, JobStatus.RETRY_WAIT.value]),
         )
         .values(
@@ -118,7 +128,7 @@ def cancel_queued_job(session: Session, job_id: str) -> Job:
     )
     if result.rowcount != 1:
         session.rollback()
-        job = get_job(session, job_id)
+        job = get_job(session, job_id, tenant_id)
         raise HTTPException(status_code=409, detail=f"Cannot cancel job in state '{job.status}'")
     session.commit()
-    return get_job(session, job_id)
+    return get_job(session, job_id, tenant_id)
