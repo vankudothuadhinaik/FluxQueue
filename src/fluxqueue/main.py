@@ -15,6 +15,7 @@ app = FastAPI(
     version="0.1.0",
 )
 
+
 @app.get("/health/live", tags=["health"])
 def live() -> dict[str, str]:
     return {"status": "alive"}
