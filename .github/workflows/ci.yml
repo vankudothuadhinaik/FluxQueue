@@ -57,7 +57,11 @@ jobs:
             sleep 1
           done
           test "$ready" = "1"
+          test "$(curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1:8000/health/live)" = "200"
           test "$(curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1:8000/api/v1/jobs)" = "401"
+          test "$(curl --silent --output /dev/null --write-out '%{http_code}' \
+            --header 'Authorization: Bearer ci-smoke-test-key' \
+            http://127.0.0.1:8000/api/v1/jobs)" = "200"
       - name: Upload coverage to Codecov
         if: env.CODECOV_TOKEN != ''
         uses: codecov/codecov-action@v5
