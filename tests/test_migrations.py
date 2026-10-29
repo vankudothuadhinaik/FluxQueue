@@ -93,9 +93,7 @@ def test_tenant_migration_preserves_existing_jobs_and_scopes_idempotency():
         assert "tenant_id" in columns
         tenant_column = next(column for column in column_info if column["name"] == "tenant_id")
         assert tenant_column["default"] is None
-        constraints = {
-            item.get("name") for item in inspector.get_unique_constraints("jobs")
-        }
+        constraints = {item.get("name") for item in inspector.get_unique_constraints("jobs")}
         assert "uq_jobs_tenant_queue_idempotency" in constraints
         assert "uq_jobs_queue_idempotency" not in constraints
 
@@ -108,9 +106,7 @@ def test_tenant_migration_preserves_existing_jobs_and_scopes_idempotency():
         with Operations.context(context):
             migration.downgrade()
         inspector = inspect(connection)
-        columns_after_downgrade = {
-            column["name"] for column in inspector.get_columns("jobs")
-        }
+        columns_after_downgrade = {column["name"] for column in inspector.get_columns("jobs")}
         assert "tenant_id" not in columns_after_downgrade
         constraints_after_downgrade = {
             item.get("name") for item in inspector.get_unique_constraints("jobs")
