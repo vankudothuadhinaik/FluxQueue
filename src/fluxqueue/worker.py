@@ -240,6 +240,12 @@ def run_once(*, worker_id: str, lease_seconds: int = DEFAULT_LEASE_SECONDS) -> b
     if job is None:
         return False
 
+    logger.info(
+        "Claimed job %s (attempt %s of %s)",
+        job["id"],
+        job["attempt_count"],
+        job["max_attempts"],
+    )
     stop = Event()
     heartbeat = Thread(
         target=_heartbeat,
@@ -253,10 +259,28 @@ def run_once(*, worker_id: str, lease_seconds: int = DEFAULT_LEASE_SECONDS) -> b
             raise ValueError(f"Unregistered task type: {job['task_type']}")
         result = handler(job["payload"])
         with SessionLocal() as session:
-            complete_job(session, job["id"], job["lease_token"], result)
+            completed = complete_job(session, job["id"], job["lease_token"], result)
+        if completed:
+            logger.info("Job %s completed successfully", job["id"])
+        else:
+            logger.warning("Job %s completion rejected because its lease is no longer current", job["id"])
     except Exception as exc:  # Task exceptions are persisted as job failures.
         with SessionLocal() as session:
-            fail_job(session, job["id"], job["lease_token"], f"{type(exc).__name__}: {exc}")
+            state = fail_job(
+                session,
+                job["id"],
+                job["lease_token"],
+                f"{type(exc).__name__}: {exc}",
+            )
+        if state is not None:
+            logger.warning(
+                "Job %s failed with %s; next state is %s",
+                job["id"],
+                type(exc).__name__,
+                state,
+            )
+        else:
+            logger.warning("Job %s failure rejected because its lease is no longer current", job["id"])
     finally:
         stop.set()
         heartbeat.join(timeout=2)
