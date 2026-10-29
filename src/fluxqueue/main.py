@@ -1,6 +1,8 @@
 """FastAPI service."""
 
 from fastapi import Depends, FastAPI, Header, Query
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
