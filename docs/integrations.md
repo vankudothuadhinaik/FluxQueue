@@ -18,16 +18,34 @@ Keep the token only in GitHub Actions secrets; never commit it or paste it into 
 
 ## Doppler
 
-The root `doppler.yaml` maps this repository to the Doppler project `fluxqueue`, config `dev`. The project and config must exist in the Doppler workspace; the mapping does not create them or contain secrets.
+The root `doppler.yaml` maps this repository to the Doppler project `fluxqueue`, config `dev`. This file is only a local CLI mapping; it does not create the project/config or prove the workspace is connected.
 
-After installing and authenticating the Doppler CLI, use the repository directory and run:
+### One-time workspace setup
+
+1. In the Doppler dashboard, create a project named `fluxqueue` and a config named `dev` (or adjust `doppler.yaml` to match your actual names).
+2. Add these values to the `dev` config:
+   - `POSTGRES_PASSWORD`: a unique local-development password, not the Compose fallback.
+   - `APP_ENV`: `development`.
+   - `API_KEYS`: `{}` for local unauthenticated development, or a JSON object mapping high-entropy bearer keys to tenant IDs for authenticated testing.
+   - `MAX_ACTIVE_JOBS_PER_TENANT`: `1000` (optional; this is the application default).
+3. Do not paste Doppler service tokens into GitHub source files, issues, logs, or chat. Use the Doppler CLI login flow for a developer machine; use a narrowly scoped service token only in a secret store for automation/deployments.
+
+### Verify locally
+
+Install the Doppler CLI and authenticate with `doppler login`. From the repository root, run:
 
 ```bash
 doppler setup --no-interactive
+doppler secrets
+doppler run -- docker compose config --quiet
 doppler run -- docker compose up --build
 ```
 
-The selected config should provide the non-secret configuration and secrets expected by Compose, especially `POSTGRES_PASSWORD` and `API_KEYS`. For production, use a separate production config and set `API_KEYS` to a JSON object mapping high-entropy bearer keys to tenant IDs; `API_KEY` is single-tenant compatibility only and is ignored when `API_KEYS` is non-empty. Do not add Doppler service tokens to the repository or CI logs. Official CLI guide: https://docs.doppler.com/docs/cli
+Confirm the services become healthy, then check `http://127.0.0.1:8000/health/ready`. Stop the stack with `docker compose down` when finished. Never run `docker compose down -v` against a database whose data must be retained.
+
+### Production boundary
+
+Create a separate production config; do not reuse `dev`. Set `APP_ENV=production`, a strong `POSTGRES_PASSWORD`, and `API_KEYS` as a JSON object mapping high-entropy bearer keys to tenant IDs. `API_KEY` is single-tenant compatibility only and is ignored when `API_KEYS` is non-empty. This Compose stack binds ports to loopback and is intended for local use; Doppler setup alone does not create a production deployment. Do not add Doppler service tokens to the repository or CI logs. Official CLI guide: https://docs.doppler.com/docs/cli
 
 ## CodeScene
 
