@@ -71,9 +71,7 @@ def test_sdk_list_encodes_query_parameters(monkeypatch):
 
 def test_sdk_surfaces_http_status_and_body(monkeypatch):
     def fake_urlopen(request, timeout):
-        raise HTTPError(
-            request.full_url, 404, "missing", {}, BytesIO(b'{"detail":"not found"}')
-        )
+        raise HTTPError(request.full_url, 404, "missing", {}, BytesIO(b'{"detail":"not found"}'))
 
     monkeypatch.setattr(sdk, "urlopen", fake_urlopen)
     with pytest.raises(FluxQueueError, match="HTTP 404") as exc:
