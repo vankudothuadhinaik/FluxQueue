@@ -7,6 +7,7 @@ Report vulnerabilities privately to the repository owner; do not publish exploit
 - This is an early-stage API; do not expose it to the public internet.
 - A shared bearer API key is supported for protected job/queue routes. Tenant-level authorization and per-user identities are not implemented. Production configuration requires `API_KEY`.
 - Never accept shell commands, import paths, or executable code as job payloads.
+- The API limits serialized job payloads to 64 KiB; also enforce request-body limits at the proxy/edge.
 - Never commit credentials, tokens, local environment files, or database files.
 - Replace local-only database passwords before shared use.
 - Keep operational endpoints behind authentication when they are added.
