@@ -14,13 +14,15 @@ from fluxqueue.service import cancel_queued_job, enqueue, get_job, list_jobs
 
 app = FastAPI(
     title="FluxQueue",
-    description="Durable job submission and operational API.",
+    description="Durable job submission and operational API with tenant-scoped access.",
     version="0.1.0",
 )
 
 
 @app.exception_handler(RequestValidationError)
-async def request_validation_error_handler(request, exc: RequestValidationError) -> JSONResponse:
+async def request_validation_error_handler(
+    request, exc: RequestValidationError
+) -> JSONResponse:
     """Return safe validation details without echoing non-JSON input values."""
     del request
     details = [
@@ -50,25 +52,25 @@ def ready(session: Session = Depends(get_session)) -> dict[str, str]:
     response_model=JobRead,
     status_code=202,
     tags=["jobs"],
-    dependencies=[Depends(require_api_key)],
 )
 def create_job(
     data: JobCreate,
+    tenant_id: str = Depends(require_api_key),
     idempotency_key: str | None = Header(
         default=None, alias="Idempotency-Key", min_length=1, max_length=255
     ),
     session: Session = Depends(get_session),
 ) -> JobRead:
-    return JobRead.model_validate(enqueue(session, data, idempotency_key))
+    return JobRead.model_validate(enqueue(session, data, idempotency_key, tenant_id))
 
 
 @app.get(
     "/api/v1/jobs",
     response_model=JobList,
     tags=["jobs"],
-    dependencies=[Depends(require_api_key)],
 )
 def get_jobs(
+    tenant_id: str = Depends(require_api_key),
     status: str | None = Query(
         default=None,
         pattern="^(queued|running|succeeded|retry_wait|dead|cancelled)$",
@@ -78,7 +80,14 @@ def get_jobs(
     offset: int = Query(default=0, ge=0),
     session: Session = Depends(get_session),
 ) -> JobList:
-    items, total = list_jobs(session, status=status, queue=queue, limit=limit, offset=offset)
+    items, total = list_jobs(
+        session,
+        status=status,
+        queue=queue,
+        limit=limit,
+        offset=offset,
+        tenant_id=tenant_id,
+    )
     return JobList(
         items=[JobRead.model_validate(item) for item in items],
         total=total,
@@ -91,26 +100,37 @@ def get_jobs(
     "/api/v1/jobs/{job_id}",
     response_model=JobRead,
     tags=["jobs"],
-    dependencies=[Depends(require_api_key)],
 )
-def read_job(job_id: str, session: Session = Depends(get_session)) -> JobRead:
-    return JobRead.model_validate(get_job(session, job_id))
+def read_job(
+    job_id: str,
+    tenant_id: str = Depends(require_api_key),
+    session: Session = Depends(get_session),
+) -> JobRead:
+    return JobRead.model_validate(get_job(session, job_id, tenant_id))
 
 
 @app.post(
     "/api/v1/jobs/{job_id}/cancel",
     response_model=JobRead,
     tags=["jobs"],
-    dependencies=[Depends(require_api_key)],
 )
-def cancel_job(job_id: str, session: Session = Depends(get_session)) -> JobRead:
-    return JobRead.model_validate(cancel_queued_job(session, job_id))
+def cancel_job(
+    job_id: str,
+    tenant_id: str = Depends(require_api_key),
+    session: Session = Depends(get_session),
+) -> JobRead:
+    return JobRead.model_validate(cancel_queued_job(session, job_id, tenant_id))
 
 
-@app.get("/api/v1/queues", tags=["queues"], dependencies=[Depends(require_api_key)])
-def get_queues(session: Session = Depends(get_session)) -> list[dict[str, object]]:
+@app.get("/api/v1/queues", tags=["queues"])
+def get_queues(
+    tenant_id: str = Depends(require_api_key),
+    session: Session = Depends(get_session),
+) -> list[dict[str, object]]:
     rows = session.execute(
-        select(Job.queue_name, Job.status, func.count()).group_by(Job.queue_name, Job.status)
+        select(Job.queue_name, Job.status, func.count())
+        .where(Job.tenant_id == tenant_id)
+        .group_by(Job.queue_name, Job.status)
     ).all()
     counts: dict[str, dict[str, int]] = {}
     for queue_name, status, count in rows:
