@@ -24,7 +24,7 @@ FluxQueue is an early-stage job queue. Passing CI is necessary, but it does not 
 - [ ] Define alert thresholds, an on-call owner, backup restoration procedure, and a rollback procedure.
 - [ ] Run reproducible load/soak tests and record throughput, latency percentiles, worker concurrency, and database utilization.
 - [ ] Review dependency/security scan results and resolve or explicitly accept findings.
-- [ ] Confirm migration rollout and rollback behavior against a disposable copy of production-like data.
+- [ ] Confirm migration rollout and rollback behavior against a disposable copy of production-like data; CI also tests tenant migration against a populated legacy SQLite table.
 
 ## Release evidence
 
