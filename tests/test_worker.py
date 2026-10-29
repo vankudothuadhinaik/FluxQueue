@@ -1,7 +1,5 @@
 """Worker lease and state-transition tests."""
 
-from datetime import UTC, datetime, timedelta
-
 import pytest
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker
