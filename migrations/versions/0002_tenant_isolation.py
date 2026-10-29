@@ -38,6 +38,9 @@ def upgrade() -> None:
                     "uq_jobs_tenant_queue_idempotency",
                     ["tenant_id", "queue_name", "idempotency_key"],
                 )
+        # Remove the temporary backfill default only after the batch copy succeeds.
+        with op.batch_alter_table("jobs") as batch:
+            batch.alter_column("tenant_id", server_default=None)
 
     inspector = inspect(bind)
     indexes = {index["name"] for index in inspector.get_indexes("jobs")}
