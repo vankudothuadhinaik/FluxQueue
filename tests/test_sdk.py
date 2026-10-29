@@ -118,6 +118,22 @@ def test_cli_reports_missing_api_key():
     assert exc.value.code == 2
 
 
+def test_cli_reports_invalid_base_url_without_traceback(capsys):
+    result = main(
+        [
+            "--api-key",
+            "key",
+            "--base-url",
+            "http://api.example.com",
+            "list",
+        ]
+    )
+    captured = capsys.readouterr()
+    assert result == 1
+    assert "HTTPS is required" in captured.err
+    assert "Traceback" not in captured.err
+
+
 def test_sdk_rejects_invalid_constructor_settings():
     with pytest.raises(ValueError, match="base_url"):
         FluxQueueClient("", "key")
