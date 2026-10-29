@@ -135,3 +135,11 @@ def test_delay_is_bounded(client):
         json={"task_type": "echo", "payload": {}, "delay_seconds": 86_401},
     )
     assert response.status_code == 422
+
+
+
+def test_idempotency_keys_are_scoped_to_queue(client):
+    headers = {"Idempotency-Key": "shared-key"}
+    first = submit(client, {"queue": "mail"}, headers=headers)
+    second = submit(client, {"queue": "reports"}, headers=headers)
+    assert first["id"] != second["id"]
