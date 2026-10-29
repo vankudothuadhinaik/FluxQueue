@@ -31,6 +31,7 @@ class Job(Base):
             "tenant_id", "queue_name", "idempotency_key", name="uq_jobs_tenant_queue_idempotency"
         ),
         Index("ix_jobs_tenant_queue_status_created", "tenant_id", "queue_name", "status", "created_at"),
+        Index("ix_jobs_queue_status_created", "queue_name", "status", "created_at"),
         Index("ix_jobs_status_run_at", "status", "run_at"),
         Index("ix_jobs_status_lease_expiry", "status", "lease_expires_at"),
     )
