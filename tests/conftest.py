@@ -6,6 +6,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from fluxqueue import models as _models  # noqa: F401
 from fluxqueue.db import Base, get_session
 
 
