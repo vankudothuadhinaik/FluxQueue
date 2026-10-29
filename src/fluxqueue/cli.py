@@ -78,7 +78,7 @@ def main(argv: list[str] | None = None) -> int:
             result = client.cancel_job(args.job_id)
         else:
             result = client.list_queues()
-    except (FluxQueueError, OSError, ValueError, json.JSONDecodeError) as exc:
+    except (FluxQueueError, OSError, ValueError) as exc:
         print(f"fluxqueue: {exc}", file=sys.stderr)
         return 1
 
