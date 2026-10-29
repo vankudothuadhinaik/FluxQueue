@@ -97,22 +97,23 @@ def test_configured_api_key_protects_all_api_route_families(client, monkeypatch)
         ("GET", "/api/v1/queues"),
     ]
     for method, path in protected_requests:
-        kwargs = {"json": {"task_type": "echo", "payload": {}}} if path == "/api/v1/jobs" and method == "POST" else {}
+        kwargs = (
+            {"json": {"task_type": "echo", "payload": {}}}
+            if path == "/api/v1/jobs" and method == "POST"
+            else {}
+        )
         response = client.request(method, path, **kwargs)
         assert response.status_code == 401, f"{method} {path}: {response.status_code}"
 
-    assert client.get(
-        "/api/v1/jobs", headers={"Authorization": "Bearer wrong"}
-    ).status_code == 401
-    assert client.get(
-        "/api/v1/jobs", headers={"Authorization": "Basic test-secret"}
-    ).status_code == 401
+    assert client.get("/api/v1/jobs", headers={"Authorization": "Bearer wrong"}).status_code == 401
+    assert (
+        client.get("/api/v1/jobs", headers={"Authorization": "Basic test-secret"}).status_code
+        == 401
+    )
     assert client.get("/health/live").status_code == 200
     assert client.get("/health/ready").status_code == 200
 
-    response = client.get(
-        "/api/v1/jobs", headers={"Authorization": "Bearer test-secret"}
-    )
+    response = client.get("/api/v1/jobs", headers={"Authorization": "Bearer test-secret"})
     assert response.status_code == 200
 
 
