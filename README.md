@@ -6,7 +6,7 @@ A durable job-processing platform built with FastAPI, SQLAlchemy, and PostgreSQL
 
 ## Current capabilities
 
-- Validated job submission and commit-before-acceptance.
+- Validated job submission with a 64 KiB serialized-payload cap and commit-before-acceptance.
 - Queue-scoped idempotency keys with conflict detection.
 - Job retrieval, filtering, pagination, queue counts, and cancellation.
 - Separate worker process with registered handlers: `echo`, `add_numbers`, and `uppercase`.
