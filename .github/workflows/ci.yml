@@ -85,7 +85,7 @@ jobs:
             --header 'Authorization: Bearer ci-smoke-test-key' \
             http://127.0.0.1:8000/api/v1/jobs)" = "200"
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7
         with:
           files: coverage.xml
           token: ${{ secrets.CODECOV_TOKEN }}
