@@ -74,7 +74,7 @@ CodeScene must be connected through its workspace and GitHub integration; do not
 
 If FluxQueue is not listed, check which GitHub account is connected to CodeScene and whether the CodeScene Access app installation includes this repository. Private repository analysis may depend on the CodeScene plan. Do not create a custom GitHub App or store a private key unless the CodeScene setup flow specifically requires it.
 
-**Verification status (2026-10-29):** The FluxQueue project dashboard shows a successful analysis dated October 29, 2026, with average code health 9.4 and hotspot code health 9.6. The GitHub PR check is now verified: CodeScene posted `CodeScene Code Health Review (main)` on PR #17 and the latest review passed all three quality gates after the Doppler validator was refactored. See [latest CodeScene result](https://codescene.io/projects/87037/delta/results/8191366).
+**Verification status (2026-10-29):** The FluxQueue project dashboard shows a successful analysis dated October 29, 2026. The GitHub PR check is verified: CodeScene posted `CodeScene Code Health Review (main)` on PR #17 and the latest review passed all three quality gates after the enqueue hotspot was simplified. See [latest CodeScene result](https://codescene.io/projects/87037/delta/results/8195097).
 
 Official references:
 - [CodeScene getting started](https://codescene.io/docs/getting-started/index.html)
@@ -91,9 +91,9 @@ Copilot and Codex are development assistants, not runtime dependencies. Keep the
 
 ## Current integration status
 
-- GitHub Actions: configured; final PR CI run [40894751613](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40894751613) passed all four jobs on commit `81b567b413a744044528af75d19d6772d19194aa`.
-- CodeQL and Python dependency audit: passed in the final PR CI run above ([security](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40894751613/job/123520688092), [dependency audit](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40894751613/job/123520688002)).
+- GitHub Actions: configured; final PR CI run [40922788784](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40922788784) passed all four jobs on commit `87bfda6`.
+- CodeQL and Python dependency audit: passed in the final PR CI run above ([security](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40922788784/job/123620215952), [dependency audit](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40922788784/job/123620217165)).
 - Codecov: coverage upload was accepted and queued for processing in run [40882641655](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40882641655). The token exposed in the setup screenshot should be rotated and `CODECOV_TOKEN` updated; do not claim rotation is verified until a run succeeds with the replacement token.
-- Doppler: project/config injection was reported verified in the PR's local smoke test; CI validates service wiring without requiring a Doppler token.
-- CodeScene: PR integration is active; the final review on PR #17 passed ([CodeScene check](https://github.com/vankudothuadhinaik/FluxQueue/runs/123520649693), [analysis result](https://codescene.io/projects/87037/delta/results/8191366)).
+- Doppler: an authenticated local CLI check confirmed project `fluxqueue`, config `dev`, and secret injection; CI validates service wiring without requiring a Doppler token.
+- CodeScene: PR integration is active; the final review on PR #17 passed ([CodeScene check](https://github.com/vankudothuadhinaik/FluxQueue/runs/123620182360), [analysis result](https://codescene.io/projects/87037/delta/results/8195097)).
 - Render/other deployment: no production service is created by these files. Deploying a public service requires a deliberate environment, database, and cost decision.

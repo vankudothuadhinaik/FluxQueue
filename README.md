@@ -5,7 +5,7 @@
 
 A durable job-processing platform built with FastAPI, SQLAlchemy, and PostgreSQL.
 
-> **Current status (2026-10-29): Doppler integration and CI hardening are implemented on PR #17.** The latest verified CI run is [40913827101](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40913827101) for commit `6967ba6da53149fa89b997261f1a4f39e5aa09df`; test/build, PostgreSQL integration, dependency audit, and CodeQL jobs all passed. The PR remains open and unmerged. CI success does **not** mean production readiness: credential rotation, real proxy/TLS validation, backup restoration, operations monitoring, and load/soak testing remain unverified release gates.
+> **Current status (2026-10-29): Doppler integration and CI hardening are implemented on PR #17.** The latest verified CI run is [40922788784](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40922788784) for commit `87bfda6`; test/build, PostgreSQL integration, dependency audit, CodeQL, and CodeScene jobs all passed. The PR remains open and unmerged. CI success does **not** mean production readiness: credential rotation, real proxy/TLS validation, backup restoration, operations monitoring, and load/soak testing remain unverified release gates.
 
 ## Current capabilities
 
@@ -155,12 +155,13 @@ Codecov upload activates when the repository Actions secret `CODECOV_TOKEN` is c
 
 ## CI status and latest verification
 
-CI runs on pushes, pull requests, and a weekly schedule. The latest verified run for this PR is [run 40913827101](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40913827101), associated with commit `6967ba6da53149fa89b997261f1a4f39e5aa09df`. All four jobs passed:
+CI runs on pushes, pull requests, and a weekly schedule. The latest verified run for this PR is [run 40922788784](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40922788784), associated with commit `87bfda6`. All four CI jobs and the CodeScene PR check passed:
 
 - `test`: compilation, fresh/upgrade migration checks, Ruff, unit/API tests, Compose and Doppler wiring validation, container build/non-root check, protected-route smoke test, and Codecov upload.
 - `postgres-integration`: PostgreSQL migration, locking, and lease-fencing checks.
 - `dependency-audit`: resolved Python dependency audit.
 - `security`: CodeQL analysis.
+- `CodeScene Code Health Review (main)`: PR quality gates passed after reducing the `enqueue` hotspot complexity.
 
 Earlier verification recorded 68 passed and 4 skipped, plus 4 PostgreSQL integration tests passed and an authenticated Doppler development smoke test. These earlier results should not be misrepresented as fresh local execution of the latest commit.
 
