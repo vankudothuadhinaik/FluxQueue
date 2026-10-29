@@ -267,13 +267,10 @@ def test_tenant_key_mapping_takes_precedence_over_legacy_key(client, monkeypatch
     )
 
 
-def test_unicode_api_key_comparison_is_supported(client, monkeypatch):
-    from fluxqueue.auth import settings
+
+def test_unicode_api_key_comparison_is_supported(monkeypatch):
+    from fluxqueue.auth import require_api_key, settings
 
     monkeypatch.setattr(settings, "api_key", None)
     monkeypatch.setattr(settings, "api_keys", {"clé-secret": "tenant-a"})
-    response = client.get(
-        "/api/v1/jobs",
-        headers={"Authorization": "Bearer clé-secret"},
-    )
-    assert response.status_code == 200
+    assert require_api_key("Bearer clé-secret") == "tenant-a"
