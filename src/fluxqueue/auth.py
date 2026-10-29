@@ -27,7 +27,7 @@ def require_api_key(authorization: str | None = Header(default=None)) -> str:
             return tenant_id
 
     expected = settings.api_key
-    if expected and compare_digest(provided, expected):
+    if expected and not settings.api_keys and compare_digest(provided, expected):
         return "default"
 
     if not expected and not settings.api_keys and settings.app_env.lower() not in {
