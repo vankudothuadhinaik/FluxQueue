@@ -34,6 +34,8 @@ jobs:
         run: alembic downgrade base && alembic upgrade head
       - run: ruff check .
       - run: ruff format --check .
+      - name: Verify tenant migration preserves existing jobs and can downgrade
+        run: pytest -q tests/test_migrations.py
       - name: Run unit and API tests
         run: pytest --cov=fluxqueue --cov-report=xml --junitxml=junit.xml
       - name: Archive test and coverage reports
