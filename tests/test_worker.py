@@ -165,3 +165,37 @@ def test_future_scheduled_job_is_not_claimed_early(session):
     session.commit()
     assert claim_next_job(session, "worker-a") is None
     assert session.get(Job, job.id).status == JobStatus.QUEUED.value
+
+
+def test_worker_logs_job_lifecycle_without_logging_payload(monkeypatch, caplog):
+    import logging
+
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+    from sqlalchemy.pool import StaticPool
+
+    from fluxqueue import worker
+
+    engine = create_engine(
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(bind=engine)
+    factory = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
+    monkeypatch.setattr(worker, "SessionLocal", factory)
+    with factory() as db:
+        add_job(db)
+        job = db.scalar(select(Job))
+        assert job is not None
+        job.payload = {"message": "private-payload-marker"}
+        db.commit()
+
+    caplog.set_level(logging.INFO, logger="fluxqueue.worker")
+    try:
+        assert worker.run_once(worker_id="test-worker")
+        assert "Claimed job" in caplog.text
+        assert "completed successfully" in caplog.text
+        assert "private-payload-marker" not in caplog.text
+    finally:
+        engine.dispose()
