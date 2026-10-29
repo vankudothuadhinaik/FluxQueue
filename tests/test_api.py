@@ -2,7 +2,13 @@
 
 
 def submit(client, payload=None, headers=None):
-    body = {"task_type": "echo", "payload": {"message": "hello"}, "queue": "default", "priority": 5, "max_attempts": 3}
+    body = {
+        "task_type": "echo",
+        "payload": {"message": "hello"},
+        "queue": "default",
+        "priority": 5,
+        "max_attempts": 3,
+    }
     if payload:
         body.update(payload)
     response = client.post("/api/v1/jobs", json=body, headers=headers or {})
@@ -42,7 +48,11 @@ def test_idempotent_submission_returns_same_job(client):
 def test_reusing_idempotency_key_with_different_payload_conflicts(client):
     headers = {"Idempotency-Key": "request-1"}
     submit(client, headers=headers)
-    response = client.post("/api/v1/jobs", json={"task_type": "echo", "payload": {"different": True}}, headers=headers)
+    response = client.post(
+        "/api/v1/jobs",
+        json={"task_type": "echo", "payload": {"different": True}},
+        headers=headers,
+    )
     assert response.status_code == 409
 
 
