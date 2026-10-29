@@ -5,6 +5,9 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
+from starlette.middleware.base import RequestResponseEndpoint
+from starlette.requests import Request
+from starlette.responses import Response
 
 from fluxqueue.auth import require_api_key
 from fluxqueue.db import get_session
@@ -20,7 +23,9 @@ app = FastAPI(
 
 
 @app.middleware("http")
-async def add_security_headers(request, call_next):
+async def add_security_headers(
+    request: Request, call_next: RequestResponseEndpoint
+) -> Response:
     """Set baseline browser-facing headers; configure HSTS at the TLS proxy."""
     response = await call_next(request)
     response.headers.setdefault("X-Content-Type-Options", "nosniff")
