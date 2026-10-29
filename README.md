@@ -14,7 +14,7 @@ A durable job-processing platform built with FastAPI, SQLAlchemy, and PostgreSQL
 - Job retrieval, filtering, pagination, queue counts, and cancellation.
 - Separate worker process with registered handlers: `echo`, `add_numbers`, and `uppercase`.
 - Lease expiry/reclaim, heartbeat renewal, stale-token fencing, bounded exponential retry, and terminal `dead` state.
-- Non-root API/worker container, Alembic migrations, Docker Compose, SQLite unit/API tests, PostgreSQL concurrency integration tests, container startup/auth smoke checks, Ruff, CodeQL, Dependabot, and optional Codecov.
+- Non-root API/worker container, Alembic migrations, Docker Compose, SQLite unit/API tests, PostgreSQL concurrency integration tests, container startup/auth smoke checks, Ruff, CodeQL, automated dependency auditing, Dependabot, and optional Codecov.
 
 ## Quick start
 
@@ -92,7 +92,7 @@ Codecov upload activates when the repository Actions secret `CODECOV_TOKEN` is c
 
 ## CI status
 
-CI checks SQLite unit/API tests, builds the container and verifies it runs as non-root, smoke-tests startup/health/authenticated access, and runs a separate PostgreSQL service job for `SKIP LOCKED`, concurrent claims, expired-lease recovery, and stale-token fencing. The PostgreSQL job also validates the Alembic migration. The newly added PostgreSQL job has not yet been confirmed green; verify the newest [GitHub Actions run](https://github.com/vankudothuadhinaik/FluxQueue/actions) before release. Codecov upload is skipped unless `CODECOV_TOKEN` is configured.
+CI runs on pushes, pull requests, and a weekly schedule. It checks SQLite unit/API tests, builds the container and verifies it runs as non-root, smoke-tests startup/health/authenticated access, archives machine-readable test reports, audits resolved Python dependencies, and runs a separate PostgreSQL service job for `SKIP LOCKED`, concurrent claims, expired-lease recovery, and stale-token fencing. The PostgreSQL job also validates the Alembic migration. The newly added PostgreSQL job has not yet been confirmed green; verify the newest [GitHub Actions run](https://github.com/vankudothuadhinaik/FluxQueue/actions) before release. Codecov upload is skipped unless `CODECOV_TOKEN` is configured.
 
 ## License
 
