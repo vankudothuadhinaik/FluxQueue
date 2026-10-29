@@ -1,9 +1,10 @@
 """API request and response schemas."""
 
+import json
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class JobCreate(BaseModel):
@@ -14,6 +15,14 @@ class JobCreate(BaseModel):
     )
     priority: int = Field(default=5, ge=0, le=9)
     max_attempts: int = Field(default=3, ge=1, le=20)
+
+    @field_validator("payload")
+    @classmethod
+    def enforce_payload_size(cls, value: dict[str, Any]) -> dict[str, Any]:
+        encoded = json.dumps(value, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+        if len(encoded) > 65_536:
+            raise ValueError("payload must be at most 64 KiB when encoded as JSON")
+        return value
 
 
 class JobRead(BaseModel):
