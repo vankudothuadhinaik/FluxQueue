@@ -37,8 +37,13 @@ class FluxQueueClient:
         self.timeout = timeout
 
     def _request(
-        self, method: str, path: str, *, body: dict[str, Any] | None = None,
-        query: str = "", idempotency_key: str | None = None,
+        self,
+        method: str,
+        path: str,
+        *,
+        body: dict[str, Any] | None = None,
+        query: str = "",
+        idempotency_key: str | None = None,
     ) -> Any:
         url = f"{self.base_url}{path}" + (f"?{query}" if query else "")
         headers = {"Authorization": f"Bearer {self.api_key}", "Accept": "application/json"}
@@ -67,7 +72,9 @@ class FluxQueueClient:
         except json.JSONDecodeError as exc:
             raise FluxQueueError("FluxQueue API returned invalid JSON") from exc
 
-    def submit(self, job: dict[str, Any], *, idempotency_key: str | None = None) -> dict[str, Any]:
+    def submit(
+        self, job: dict[str, Any], *, idempotency_key: str | None = None
+    ) -> dict[str, Any]:
         """Submit a job and return the API response."""
         return self._request(
             "POST", "/api/v1/jobs", body=job, idempotency_key=idempotency_key
@@ -78,8 +85,12 @@ class FluxQueueClient:
         return self._request("GET", f"/api/v1/jobs/{quote(job_id, safe='')}")
 
     def list_jobs(
-        self, *, status: str | None = None, queue: str | None = None,
-        limit: int = 50, offset: int = 0,
+        self,
+        *,
+        status: str | None = None,
+        queue: str | None = None,
+        limit: int = 50,
+        offset: int = 0,
     ) -> dict[str, Any]:
         """List jobs with optional filters and pagination."""
         from urllib.parse import urlencode
