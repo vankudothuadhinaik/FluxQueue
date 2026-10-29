@@ -28,8 +28,11 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def require_api_key_in_production(self):
-        if self.app_env.lower() in {"production", "prod"} and not (self.api_key or self.api_keys):
+        is_production = self.app_env.lower() in {"production", "prod"}
+        if is_production and not (self.api_key or self.api_keys):
             raise ValueError("API_KEY or API_KEYS must be configured when APP_ENV is production")
+        if is_production and self.api_key and self.api_keys:
+            raise ValueError("Configure API_KEYS for tenant isolation or API_KEY for single-tenant use, not both")
         return self
 
 
