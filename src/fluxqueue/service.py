@@ -2,7 +2,7 @@
 
 import hashlib
 import json
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import NamedTuple
 
 from fastapi import HTTPException
@@ -41,6 +41,7 @@ def enqueue(session: Session, data: JobCreate, idempotency_key: str | None) -> J
                 )
             return existing
 
+    now = datetime.now(UTC)
     job = Job(
         queue_name=data.queue,
         task_type=data.task_type,
@@ -49,6 +50,7 @@ def enqueue(session: Session, data: JobCreate, idempotency_key: str | None) -> J
         max_attempts=data.max_attempts,
         idempotency_key=idempotency_key,
         payload_fingerprint=digest,
+        run_at=now + timedelta(seconds=data.delay_seconds) if data.delay_seconds else None,
     )
     session.add(job)
     try:
