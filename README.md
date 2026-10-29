@@ -14,7 +14,7 @@ A durable job-processing platform built with FastAPI, SQLAlchemy, and PostgreSQL
 - Job retrieval, filtering, pagination, queue counts, and cancellation.
 - Separate worker process with registered handlers: `echo`, `add_numbers`, and `uppercase`.
 - Lease expiry/reclaim, heartbeat renewal, stale-token fencing, bounded exponential retry, terminal `dead` state, and payload-free worker lifecycle logs.
-- Non-root API/worker container, Alembic migrations, Docker Compose, SQLite unit/API tests, PostgreSQL concurrency integration tests, container startup/auth smoke checks, Ruff, CodeQL, automated dependency auditing, Dependabot, and optional Codecov.
+- Non-root API/worker container, baseline security response headers, loopback-bound local Compose ports, Alembic migrations, SQLite unit/API tests, PostgreSQL concurrency integration tests, container startup/auth smoke checks, Ruff, CodeQL, automated dependency auditing, Dependabot, and optional Codecov.
 
 ## Quick start
 
