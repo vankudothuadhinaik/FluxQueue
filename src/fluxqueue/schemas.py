@@ -1,4 +1,4 @@
-"""API schemas."""
+"""API request and response schemas."""
 
 from datetime import datetime
 from typing import Any
