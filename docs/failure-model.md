@@ -21,7 +21,7 @@ Execution is at-least-once, not exactly-once. A handler can perform an external 
 ## Known limits and required release gates
 
 - SQLite does not provide PostgreSQL's row-level `SKIP LOCKED` semantics; use PostgreSQL for concurrent worker deployments.
-- Validate worker recovery with real process termination, database restart, and concurrent workers.
-- Test migration upgrade/downgrade against both fresh and existing databases.
+- PostgreSQL CI integration tests exercise row-lock skipping, concurrent claims, lease reclamation, and stale-token fencing. Process termination and database-restart fault injection remain outstanding.
+- Keep migration upgrade/downgrade checks green against fresh and existing schemas (covered by CI migration steps).
 - Add authentication, tenant authorization, rate/payload limits, secret handling, and operational controls before public deployment.
 - Run reproducible throughput/latency tests before making performance claims.
