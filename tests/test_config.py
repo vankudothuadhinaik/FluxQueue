@@ -3,7 +3,10 @@
 from fluxqueue.config import Settings
 
 
-def test_database_password_is_url_encoded_when_compose_builds_url():
+def test_database_password_is_url_encoded_when_compose_builds_url(monkeypatch):
+    # CI sets DATABASE_URL globally for the SQLite test suite; clear it so this
+    # focused test exercises the PostgreSQL URL derived from the supplied secret.
+    monkeypatch.delenv("DATABASE_URL", raising=False)
     configured = Settings(postgres_password="p@ss:word/with?chars#")
 
     assert configured.database_url == (
