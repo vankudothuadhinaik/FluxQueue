@@ -136,9 +136,7 @@ def test_sdk_encodes_job_identifier_as_one_path_segment(monkeypatch):
 
     monkeypatch.setattr(sdk, "urlopen", fake_urlopen)
     FluxQueueClient("http://localhost", "key").get_job("../admin?x=1")
-    assert captured["url"] == (
-        "http://localhost/api/v1/jobs/..%2Fadmin%3Fx%3D1"
-    )
+    assert captured["url"] == "http://localhost/api/v1/jobs/..%2Fadmin%3Fx%3D1"
 
 
 def test_sdk_cancel_encodes_job_identifier_as_one_path_segment(monkeypatch):
@@ -153,9 +151,7 @@ def test_sdk_cancel_encodes_job_identifier_as_one_path_segment(monkeypatch):
     result = FluxQueueClient("http://localhost", "key").cancel_job("../job?x=1")
     assert result["status"] == "cancelled"
     assert captured["method"] == "POST"
-    assert captured["url"] == (
-        "http://localhost/api/v1/jobs/..%2Fjob%3Fx%3D1/cancel"
-    )
+    assert captured["url"] == "http://localhost/api/v1/jobs/..%2Fjob%3Fx%3D1/cancel"
 
 
 def test_sdk_rejects_non_json_success_response(monkeypatch):
