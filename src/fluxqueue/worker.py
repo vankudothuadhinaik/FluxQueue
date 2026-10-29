@@ -263,7 +263,10 @@ def run_once(*, worker_id: str, lease_seconds: int = DEFAULT_LEASE_SECONDS) -> b
         if completed:
             logger.info("Job %s completed successfully", job["id"])
         else:
-            logger.warning("Job %s completion rejected because its lease is no longer current", job["id"])
+            logger.warning(
+                "Job %s completion rejected because its lease is no longer current",
+                job["id"],
+            )
     except Exception as exc:  # Task exceptions are persisted as job failures.
         with SessionLocal() as session:
             state = fail_job(
@@ -280,7 +283,10 @@ def run_once(*, worker_id: str, lease_seconds: int = DEFAULT_LEASE_SECONDS) -> b
                 state,
             )
         else:
-            logger.warning("Job %s failure rejected because its lease is no longer current", job["id"])
+            logger.warning(
+                "Job %s failure rejected because its lease is no longer current",
+                job["id"],
+            )
     finally:
         stop.set()
         heartbeat.join(timeout=2)
