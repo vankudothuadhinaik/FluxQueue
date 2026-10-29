@@ -137,7 +137,6 @@ def test_delay_is_bounded(client):
     assert response.status_code == 422
 
 
-
 def test_idempotency_keys_are_scoped_to_queue(client):
     headers = {"Idempotency-Key": "shared-key"}
     first = submit(client, {"queue": "mail"}, headers=headers)
