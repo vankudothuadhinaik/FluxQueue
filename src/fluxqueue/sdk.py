@@ -75,7 +75,7 @@ class FluxQueueClient:
 
     def get_job(self, job_id: str) -> dict[str, Any]:
         """Fetch a job by ID."""
-        return self._request("GET", f"/api/v1/jobs/{quote(job_id, safe="")}")
+        return self._request("GET", f"/api/v1/jobs/{quote(job_id, safe='')}")
 
     def list_jobs(
         self, *, status: str | None = None, queue: str | None = None,
