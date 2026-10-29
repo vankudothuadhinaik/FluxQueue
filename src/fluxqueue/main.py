@@ -4,6 +4,7 @@ from fastapi import Depends, FastAPI, Header, Query
 from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
+from fluxqueue.auth import require_api_key
 from fluxqueue.db import get_session
 from fluxqueue.models import Job
 from fluxqueue.schemas import JobCreate, JobList, JobRead
@@ -27,7 +28,13 @@ def ready(session: Session = Depends(get_session)) -> dict[str, str]:
     return {"status": "ready", "database": "reachable"}
 
 
-@app.post("/api/v1/jobs", response_model=JobRead, status_code=202, tags=["jobs"])
+@app.post(
+    "/api/v1/jobs",
+    response_model=JobRead,
+    status_code=202,
+    tags=["jobs"],
+    dependencies=[Depends(require_api_key)],
+)
 def create_job(
     data: JobCreate,
     idempotency_key: str | None = Header(
@@ -38,7 +45,12 @@ def create_job(
     return JobRead.model_validate(enqueue(session, data, idempotency_key))
 
 
-@app.get("/api/v1/jobs", response_model=JobList, tags=["jobs"])
+@app.get(
+    "/api/v1/jobs",
+    response_model=JobList,
+    tags=["jobs"],
+    dependencies=[Depends(require_api_key)],
+)
 def get_jobs(
     status: str | None = Query(
         default=None,
@@ -58,17 +70,27 @@ def get_jobs(
     )
 
 
-@app.get("/api/v1/jobs/{job_id}", response_model=JobRead, tags=["jobs"])
+@app.get(
+    "/api/v1/jobs/{job_id}",
+    response_model=JobRead,
+    tags=["jobs"],
+    dependencies=[Depends(require_api_key)],
+)
 def read_job(job_id: str, session: Session = Depends(get_session)) -> JobRead:
     return JobRead.model_validate(get_job(session, job_id))
 
 
-@app.post("/api/v1/jobs/{job_id}/cancel", response_model=JobRead, tags=["jobs"])
+@app.post(
+    "/api/v1/jobs/{job_id}/cancel",
+    response_model=JobRead,
+    tags=["jobs"],
+    dependencies=[Depends(require_api_key)],
+)
 def cancel_job(job_id: str, session: Session = Depends(get_session)) -> JobRead:
     return JobRead.model_validate(cancel_queued_job(session, job_id))
 
 
-@app.get("/api/v1/queues", tags=["queues"])
+@app.get("/api/v1/queues", tags=["queues"], dependencies=[Depends(require_api_key)])
 def get_queues(session: Session = Depends(get_session)) -> list[dict[str, object]]:
     rows = session.execute(
         select(Job.queue_name, Job.status, func.count()).group_by(Job.queue_name, Job.status)
