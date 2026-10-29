@@ -80,6 +80,17 @@ pytest -q tests/test_postgres_integration.py
 Do not point these integration tests at a database containing data you need to keep: the fixture
 creates and drops the FluxQueue tables.
 
+## Benchmarking
+
+Run the included enqueue benchmark against a local or controlled deployment you own:
+
+```bash
+# PowerShell: $env:FLUXQUEUE_API_KEY = "your-test-key"
+python scripts/benchmark_api.py --base-url http://127.0.0.1:8000 --requests 100 --concurrency 10
+```
+
+It reports request throughput, mean/p50/p95/p99 response latency, and HTTP status counts. It measures enqueue API latency only, not end-to-end job completion. Use a disposable environment and keep request volume below the configured active-job quota; do not run against production without an approved test window.
+
 ## Reliability boundaries
 
 The `0002_tenant_isolation` migration assigns existing jobs to the `default` tenant, adds tenant-scoped idempotency uniqueness, and indexes tenant queue queries. The worker uses lease tokens to fence stale completion/failure writes and renews leases while a handler runs. Expired claims can be reclaimed. Execution is at-least-once: an external side effect may occur before a worker crashes and acknowledges it, so side-effecting handlers must be idempotent. SQLite is useful for local development; use PostgreSQL for multi-worker deployments and concurrency behavior.
