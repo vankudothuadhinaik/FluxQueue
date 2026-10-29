@@ -15,11 +15,13 @@ from fluxqueue.sdk import FluxQueueClient, FluxQueueError
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Submit and inspect FluxQueue jobs.")
     parser.add_argument(
-        "--base-url", default=os.getenv("FLUXQUEUE_URL", "http://127.0.0.1:8000"),
+        "--base-url",
+        default=os.getenv("FLUXQUEUE_URL", "http://127.0.0.1:8000"),
         help="API base URL (default: FLUXQUEUE_URL or localhost)",
     )
     parser.add_argument(
-        "--api-key", default=os.getenv("FLUXQUEUE_API_KEY"),
+        "--api-key",
+        default=os.getenv("FLUXQUEUE_API_KEY"),
         help="Bearer API key (default: FLUXQUEUE_API_KEY environment variable)",
     )
     parser.add_argument("--timeout", type=float, default=10.0, help="HTTP timeout in seconds")
