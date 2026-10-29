@@ -1,12 +1,13 @@
 services:
   db:
     image: postgres:16-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_DB: fluxqueue
       POSTGRES_USER: fluxqueue
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fluxqueue-local-only}
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -17,13 +18,14 @@ services:
 
   api:
     build: .
+    restart: unless-stopped
     environment:
       DATABASE_URL: postgresql+psycopg://fluxqueue:${POSTGRES_PASSWORD:-fluxqueue-local-only}@db:5432/fluxqueue
       APP_ENV: ${APP_ENV:-development}
       API_KEY: ${API_KEY:-}
       API_KEYS: ${API_KEYS:-{}}
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     depends_on:
       db:
         condition: service_healthy
