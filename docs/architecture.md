@@ -13,7 +13,7 @@ flowchart LR
   API --> Ops[Health and OpenAPI]
 ```
 
-The API supports enqueue with a 64 KiB serialized-payload limit, retrieval, filtering, pagination, queue counts, cancellation of queued/retry-wait jobs, liveness, and readiness. Bearer API keys resolve to a tenant identity. The legacy `API_KEY` maps to the `default` tenant; multi-tenant deployments use `API_KEYS`, a JSON mapping from secrets to tenant IDs. The worker currently registers `echo`, `add_numbers`, and `uppercase`; unknown task names fail through the retry/dead-letter lifecycle rather than being dynamically imported or executed.
+The API supports enqueue with a 64 KiB serialized-payload limit, retrieval, filtering, pagination, queue counts, cancellation of queued/retry-wait jobs, liveness, and readiness. Responses include baseline browser security headers; HSTS must be configured at the TLS-terminating proxy. Bearer API keys resolve to a tenant identity. The legacy `API_KEY` maps to the `default` tenant; multi-tenant deployments use `API_KEYS`, a JSON mapping from secrets to tenant IDs. The worker currently registers `echo`, `add_numbers`, and `uppercase`; unknown task names fail through the retry/dead-letter lifecycle rather than being dynamically imported or executed.
 
 ## Claim and lease protocol
 
