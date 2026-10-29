@@ -73,7 +73,6 @@ def enqueue(
         raise HTTPException(
             status_code=429,
             detail="Tenant active job quota exceeded",
-            headers={"Retry-After": "5"},
         )
 
     now = datetime.now(UTC)
