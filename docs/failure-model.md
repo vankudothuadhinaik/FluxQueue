@@ -1,30 +1,24 @@
 # Failure model
 
-## Verified by design in current foundation
+## Current implementation
 
-- The enqueue service commits before returning the accepted job.
-- Request structure is validated.
-- Repeating a queue-scoped idempotency key with the same canonical request returns the original record.
-- Reusing that key with changed request data returns HTTP 409.
-- Queued/retry-wait jobs can be cancelled; other states return HTTP 409.
+- Enqueue commits before returning the accepted job.
+- Requests are schema-validated and queue-scoped idempotency keys reject changed payloads with HTTP 409.
+- The worker claims eligible jobs with a lease token, increments attempt count, and renews leases with a heartbeat.
+- Success and failure updates require the current lease token, so an old worker cannot overwrite a newer claim.
+- Retryable failures use bounded exponential backoff with jitter; exhausted jobs become `dead`.
+- Unknown task types fail as normal job errors; only explicitly registered handlers can run.
 
-These describe intended code behavior; run the local test suite and CI to verify it in a particular commit.
-
-## Not implemented yet
-
-No worker execution, retry loop, dead-letter flow, delayed scheduling, lease recovery, stale-worker fencing, auth, or benchmark results are delivered by this foundation.
+The API/worker tests cover key transitions, but the full suite has not yet been confirmed green in GitHub Actions.
 
 ## Delivery semantics
 
-A future worker implementation should target at-least-once execution. Exactly-once external side effects cannot be guaranteed by the queue alone: a handler can complete a side effect and crash before persisting its acknowledgement. Handlers should be idempotent or use downstream idempotency keys.
+Execution is at-least-once, not exactly-once. A handler can perform an external effect and crash before recording success. Handlers with side effects must be idempotent or use downstream idempotency keys.
 
-## Required fault-injection cases
+## Known limits and required release gates
 
-1. Worker exits after claim but before execution.
-2. Worker exits during a handler.
-3. Handler finishes but acknowledgement is lost.
-4. Lease expires and another worker claims the job.
-5. Stale worker attempts acknowledgement after re-claim.
-6. Database disconnect during enqueue or acknowledgement.
-7. Restart while delayed/retry jobs are due.
-8. Concurrent requests reuse a single idempotency key.
+- SQLite does not provide PostgreSQL's row-level `SKIP LOCKED` semantics; use PostgreSQL for concurrent worker deployments.
+- Validate worker recovery with real process termination, database restart, and concurrent workers.
+- Test migration upgrade/downgrade against both fresh and existing databases.
+- Add authentication, tenant authorization, rate/payload limits, secret handling, and operational controls before public deployment.
+- Run reproducible throughput/latency tests before making performance claims.
