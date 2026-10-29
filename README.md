@@ -5,7 +5,7 @@
 
 A durable job-processing platform built with FastAPI, SQLAlchemy, and PostgreSQL.
 
-> **Current status (2026-10-29): Doppler integration and CI hardening are implemented on PR #17.** Current head `6890964`; [CI run 40927562025](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40927562025) passes application tests, container smoke, PostgreSQL integration, dependency audit, and CodeQL analysis, but fails at Codecov upload with `Token required because branch is protected`. Replace the GitHub Actions `CODECOV_TOKEN` with the FluxQueue repository upload token from Codecov, confirm revocation of the old exposed token, and rerun CI. The PR remains open and unmerged pending valid Codecov authentication and external production-readiness gates.
+> **Current status (2026-10-30):** PR #17 on `feat/doppler-integration` has a successful CI rerun at [run 40928314514](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40928314514), head `5252449`. The test job including Codecov upload, PostgreSQL integration, dependency audit, and CodeQL security analysis all passed. Codecov authentication is currently working. The PR remains open and unmerged while the production-readiness gates below are verified; CI success alone does not establish production readiness.
 
 ## Current capabilities
 
@@ -155,7 +155,7 @@ Codecov upload activates when the repository Actions secret `CODECOV_TOKEN` is c
 
 ## CI status and latest verification
 
-CI runs on pushes, pull requests, and a weekly schedule. The latest run for PR #17 is [run 40927562025](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40927562025) on commit `6890964`. Core test and container checks, PostgreSQL integration, dependency audit, CodeQL analysis, and CodeScene pass, but Codecov fails because the protected-branch upload rejects the configured token. The workflow now treats that failure as blocking and publishes CodeQL SARIF when supported:
+CI runs on pushes, pull requests, and a weekly schedule. The latest verified retry for PR #17 is [run 40928314514](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40928314514) on commit `5252449`. The test job including Codecov upload, PostgreSQL integration, dependency audit, and CodeQL security analysis all passed. Codecov upload is currently verified working:
 
 - `test`: compilation, fresh/upgrade migration checks, Ruff, unit/API tests, Compose and Doppler wiring validation, container build/non-root check, protected-route smoke test, and fail-fast Codecov upload.
 - `postgres-integration`: PostgreSQL migration, locking, and lease-fencing checks.
