@@ -1,7 +1,7 @@
 """Add scheduling and worker lease columns."""
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy import inspect
 
 revision = "0001_worker_leases"
@@ -15,8 +15,8 @@ def upgrade() -> None:
     inspector = inspect(bind)
     if "jobs" not in inspector.get_table_names():
         # Create the full current schema for new installations.
-        from fluxqueue.db import Base
         from fluxqueue import models  # noqa: F401
+        from fluxqueue.db import Base
 
         Base.metadata.create_all(bind=bind)
         return
