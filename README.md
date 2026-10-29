@@ -5,7 +5,7 @@
 
 A durable job-processing platform built with FastAPI, SQLAlchemy, and PostgreSQL.
 
-> **Current status (2026-10-30):** Docker-first local staging passed on the current application code. The latest CI run is [40927562025](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40927562025) for `6890964`; PostgreSQL, dependency audit, security, CodeQL publication, and CodeScene passed, while the test job correctly failed on Codecov token validation. The PR remains open and unmerged pending a valid FluxQueue Codecov token and external production gates.
+> **Current status (2026-10-30):** PR #17 on `feat/doppler-integration` has a successful CI rerun at [run 40928314514](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40928314514), head `5252449`. The test job including Codecov upload, PostgreSQL integration, dependency audit, and CodeQL security analysis all passed. Codecov authentication is currently working. The PR remains open and unmerged while the production-readiness gates below are verified; CI success alone does not establish production readiness.
 
 ## Current capabilities
 
@@ -171,7 +171,7 @@ Codecov upload activates when the repository Actions secret `CODECOV_TOKEN` is c
 
 ## CI status and latest verification
 
-CI runs on pushes, pull requests, and a weekly schedule. The latest run for PR #17 is [40927562025](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40927562025), associated with commit `6890964`. PostgreSQL, dependency audit, security, CodeQL publication, and CodeScene passed; the test job failed only at the now fail-fast Codecov upload because the protected-branch token was rejected:
+CI runs on pushes, pull requests, and a weekly schedule. The latest verified retry for PR #17 is [run 40928314514](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40928314514) on commit `5252449`. The test job including Codecov upload, PostgreSQL integration, dependency audit, and CodeQL security analysis all passed. Codecov upload is currently verified working:
 
 - `test`: compilation, fresh/upgrade migration checks, Ruff, unit/API tests, Compose and Doppler wiring validation, container build/non-root check, protected-route smoke test, and fail-fast Codecov upload.
 - `postgres-integration`: PostgreSQL migration, locking, and lease-fencing checks.
