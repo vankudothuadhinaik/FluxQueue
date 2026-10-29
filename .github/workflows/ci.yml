@@ -42,6 +42,37 @@ jobs:
           token: ${{ env.CODECOV_TOKEN }}
           fail_ci_if_error: false
 
+  postgres-integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: fluxqueue
+          POSTGRES_USER: fluxqueue
+          POSTGRES_PASSWORD: fluxqueue
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U fluxqueue -d fluxqueue"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql+psycopg://fluxqueue:fluxqueue@localhost:5432/fluxqueue
+      FLUXQUEUE_POSTGRES_TEST_URL: postgresql+psycopg://fluxqueue:fluxqueue@localhost:5432/fluxqueue
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install -e '.[dev]'
+      - name: Validate PostgreSQL migration
+        run: alembic upgrade head
+      - name: Exercise PostgreSQL locking and lease fencing
+        run: pytest -q tests/test_postgres_integration.py
+
   security:
     runs-on: ubuntu-latest
     permissions:
