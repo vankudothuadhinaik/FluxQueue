@@ -11,10 +11,15 @@ def require_api_key(authorization: str | None = Header(default=None)) -> str:
     """Authenticate a bearer key and return its tenant identity."""
     scheme, separator, provided = (authorization or "").partition(" ")
     if scheme.lower() != "bearer" or not separator or not provided:
-        if not settings.api_key and not settings.api_keys and settings.app_env.lower() not in {
-            "production",
-            "prod",
-        }:
+        if (
+            not settings.api_key
+            and not settings.api_keys
+            and settings.app_env.lower()
+            not in {
+                "production",
+                "prod",
+            }
+        ):
             return "default"
         raise HTTPException(
             status_code=401,
@@ -38,10 +43,15 @@ def require_api_key(authorization: str | None = Header(default=None)) -> str:
     ):
         return "default"
 
-    if not expected and not settings.api_keys and settings.app_env.lower() not in {
-        "production",
-        "prod",
-    }:
+    if (
+        not expected
+        and not settings.api_keys
+        and settings.app_env.lower()
+        not in {
+            "production",
+            "prod",
+        }
+    ):
         return "default"
 
     raise HTTPException(
