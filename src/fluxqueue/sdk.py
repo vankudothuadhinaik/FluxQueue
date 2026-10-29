@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from typing import Any
 from urllib.error import HTTPError, URLError
+from urllib.parse import quote
 from urllib.request import Request, urlopen
 
 
@@ -25,6 +26,12 @@ class FluxQueueClient:
     """
 
     def __init__(self, base_url: str, api_key: str, *, timeout: float = 10.0) -> None:
+        if not base_url.strip():
+            raise ValueError("base_url must not be empty")
+        if not api_key.strip():
+            raise ValueError("api_key must not be empty")
+        if timeout <= 0:
+            raise ValueError("timeout must be greater than zero")
         self.base_url = base_url.rstrip("/")
         self.api_key = api_key
         self.timeout = timeout
@@ -68,7 +75,7 @@ class FluxQueueClient:
 
     def get_job(self, job_id: str) -> dict[str, Any]:
         """Fetch a job by ID."""
-        return self._request("GET", f"/api/v1/jobs/{job_id}")
+        return self._request("GET", f"/api/v1/jobs/{quote(job_id, safe="")}")
 
     def list_jobs(
         self, *, status: str | None = None, queue: str | None = None,
@@ -86,7 +93,7 @@ class FluxQueueClient:
 
     def cancel_job(self, job_id: str) -> dict[str, Any]:
         """Cancel a queued job."""
-        return self._request("POST", f"/api/v1/jobs/{job_id}/cancel")
+        return self._request("POST", f"/api/v1/jobs/{quote(job_id, safe="")}/cancel")
 
     def list_queues(self) -> dict[str, Any]:
         """Return queue counts available to this API key's tenant."""
