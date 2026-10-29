@@ -16,6 +16,8 @@ The upload was verified in GitHub Actions run [40882641655](https://github.com/v
 
 Keep the token only in GitHub Actions secrets; never commit it or paste it into source files, issues, or chat. Because the token appeared in a screenshot shared during setup, rotate/regenerate it in Codecov and replace the `CODECOV_TOKEN` repository secret with the new value. Then rerun CI to verify the rotated token works. Official guidance: https://github.com/codecov/codecov-action
 
+The final PR check on commit `81b567b413a744044528af75d19d6772d19194aa` also passed Codecov's patch check: [Codecov patch check](https://github.com/vankudothuadhinaik/FluxQueue/runs/123521397956). This proves the upload/check succeeded, but does not prove that the exposed credential was rotated; that remains an account-owner action unless the replacement is separately verified.
+
 ## Doppler
 
 The root `doppler.yaml` maps this repository to the Doppler project `fluxqueue`, config `dev`. The mapping is intentionally the same in every setup instruction. It is only a local CLI mapping; it does not create the project/config or prove the workspace is connected.
@@ -79,15 +81,19 @@ Official references:
 - [CodeScene GitHub hosting integration](https://www.codescene.io/docs/providers/index.html)
 - [CodeScene Access vs. Delta Analysis](https://helpcenter.codescene.com/articles/9262058-codescene-access-vs-codescene-delta-analysis-which-github-app-do)
 
+## Controlled proxy-security verification
+
+FluxQueue does not implement an outbound proxy, URL fetcher, redirect follower, DNS resolver, or SSRF protection layer. The repository's Nginx file is an example inbound reverse-proxy configuration (`deploy/nginx/fluxqueue.conf.example`), not a proxy implementation under test. Therefore DNS rebinding, unsafe destinations, redirect handling, malformed upstream responses, and proxy timeout behavior are not applicable repository tests and must not be claimed as passed. The example should be reviewed and tested separately in an authorized disposable deployment before public exposure.
+
 ## Copilot and Codex
 
 Copilot and Codex are development assistants, not runtime dependencies. Keep their changes subject to the same tests, linting, migration checks, security analysis, and review gates as any other contribution. Never place production credentials in prompts or generated files.
 
 ## Current integration status
 
-- GitHub Actions: configured; latest PR CI run [40893582266](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40893582266) passed all four jobs on commit `e07cb29`.
-- CodeQL and Python dependency audit: passed in the latest PR CI run above.
+- GitHub Actions: configured; final PR CI run [40894751613](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40894751613) passed all four jobs on commit `81b567b413a744044528af75d19d6772d19194aa`.
+- CodeQL and Python dependency audit: passed in the final PR CI run above ([security](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40894751613/job/123520688092), [dependency audit](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40894751613/job/123520688002)).
 - Codecov: coverage upload was accepted and queued for processing in run [40882641655](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40882641655). The token exposed in the setup screenshot should be rotated and `CODECOV_TOKEN` updated; do not claim rotation is verified until a run succeeds with the replacement token.
 - Doppler: project/config injection was reported verified in the PR's local smoke test; CI validates service wiring without requiring a Doppler token.
-- CodeScene: PR integration is active; the latest review on PR #17 passed all three quality gates ([result](https://codescene.io/projects/87037/delta/results/8191366)).
+- CodeScene: PR integration is active; the final review on PR #17 passed ([CodeScene check](https://github.com/vankudothuadhinaik/FluxQueue/runs/123520649693), [analysis result](https://codescene.io/projects/87037/delta/results/8191366)).
 - Render/other deployment: no production service is created by these files. Deploying a public service requires a deliberate environment, database, and cost decision.
