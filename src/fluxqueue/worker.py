@@ -1,6 +1,7 @@
 """Worker claim, lease, completion, and retry primitives."""
 
 import logging
+import math
 import os
 import random
 import socket
@@ -200,9 +201,14 @@ def _add_numbers(payload: dict[str, Any]) -> dict[str, Any]:
     if (
         not isinstance(numbers, list)
         or not numbers
-        or any(isinstance(value, bool) or not isinstance(value, int | float) for value in numbers)
+        or any(
+            isinstance(value, bool)
+            or not isinstance(value, int | float)
+            or (isinstance(value, float) and not math.isfinite(value))
+            for value in numbers
+        )
     ):
-        raise ValueError("payload.numbers must be a non-empty list of numbers")
+        raise ValueError("payload.numbers must be a non-empty list of finite numbers")
     return {"sum": sum(numbers)}
 
 
