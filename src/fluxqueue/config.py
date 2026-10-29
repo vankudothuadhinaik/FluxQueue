@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     api_key: str | None = None
     api_keys: dict[str, str] = Field(default_factory=dict)
+    max_active_jobs_per_tenant: int = Field(default=1000, ge=1)
 
     @model_validator(mode="after")
     def validate_authentication_settings(self):
