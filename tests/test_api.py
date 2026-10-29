@@ -110,3 +110,29 @@ def test_oversized_payload_is_rejected(client):
         json={"task_type": "echo", "payload": {"data": "x" * 65_537}},
     )
     assert response.status_code == 422
+
+
+def test_delayed_job_persists_run_time(client):
+    response = client.post(
+        "/api/v1/jobs",
+        json={"task_type": "echo", "payload": {}, "delay_seconds": 60},
+    )
+    assert response.status_code == 202
+    assert response.json()["run_at"] is not None
+
+
+def test_non_finite_numbers_are_rejected_in_payload(client):
+    response = client.post(
+        "/api/v1/jobs",
+        content='{"task_type":"echo","payload":{"not_finite":NaN}}',
+        headers={"content-type": "application/json"},
+    )
+    assert response.status_code == 422
+
+
+def test_delay_is_bounded(client):
+    response = client.post(
+        "/api/v1/jobs",
+        json={"task_type": "echo", "payload": {}, "delay_seconds": 86_401},
+    )
+    assert response.status_code == 422
