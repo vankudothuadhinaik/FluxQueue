@@ -19,7 +19,7 @@ services:
     build: .
     environment:
       DATABASE_URL: postgresql+psycopg://fluxqueue:${POSTGRES_PASSWORD:-fluxqueue-local-only}@db:5432/fluxqueue
-      APP_ENV: development
+      APP_ENV: ${APP_ENV:-development}
       API_KEY: ${API_KEY:-}
       API_KEYS: ${API_KEYS:-{}}
     ports:
