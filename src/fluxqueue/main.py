@@ -9,8 +9,12 @@ from fluxqueue.models import Job
 from fluxqueue.schemas import JobCreate, JobList, JobRead
 from fluxqueue.service import cancel_queued_job, enqueue, get_job, list_jobs
 
-app = FastAPI(title="FluxQueue", description="Durable job submission and operational API.", version="0.1.0")
-# Startup create_all is intentionally a starter convenience; production migrations are a milestone.
+app = FastAPI(
+    title="FluxQueue",
+    description="Durable job submission and operational API.",
+    version="0.1.0",
+)
+# Temporary bootstrap for the initial milestone. Replace with Alembic migrations before production.
 Base.metadata.create_all(bind=engine)
 
 
@@ -36,14 +40,22 @@ def create_job(
 
 @app.get("/api/v1/jobs", response_model=JobList, tags=["jobs"])
 def get_jobs(
-    status: str | None = Query(default=None, pattern="^(queued|running|succeeded|retry_wait|dead|cancelled)$"),
+    status: str | None = Query(
+        default=None,
+        pattern="^(queued|running|succeeded|retry_wait|dead|cancelled)$",
+    ),
     queue: str | None = Query(default=None, max_length=128),
     limit: int = Query(default=50, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
     session: Session = Depends(get_session),
 ) -> JobList:
     items, total = list_jobs(session, status=status, queue=queue, limit=limit, offset=offset)
-    return JobList(items=[JobRead.model_validate(item) for item in items], total=total, limit=limit, offset=offset)
+    return JobList(
+        items=[JobRead.model_validate(item) for item in items],
+        total=total,
+        limit=limit,
+        offset=offset,
+    )
 
 
 @app.get("/api/v1/jobs/{job_id}", response_model=JobRead, tags=["jobs"])
@@ -58,8 +70,10 @@ def cancel_job(job_id: str, session: Session = Depends(get_session)) -> JobRead:
 
 @app.get("/api/v1/queues", tags=["queues"])
 def get_queues(session: Session = Depends(get_session)) -> list[dict[str, object]]:
-    rows = session.execute(select(Job.queue_name, Job.status, func.count()).group_by(Job.queue_name, Job.status)).all()
-    totals: dict[str, dict[str, int]] = {}
+    rows = session.execute(
+        select(Job.queue_name, Job.status, func.count()).group_by(Job.queue_name, Job.status)
+    ).all()
+    counts: dict[str, dict[str, int]] = {}
     for queue_name, status, count in rows:
-        totals.setdefault(queue_name, {})[status] = count
-    return [{"name": name, "counts": counts} for name, counts in sorted(totals.items())]
+        counts.setdefault(queue_name, {})[status] = count
+    return [{"name": name, "counts": values} for name, values in sorted(counts.items())]
