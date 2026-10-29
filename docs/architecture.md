@@ -2,35 +2,31 @@
 
 ## Current implementation
 
-FluxQueue is currently an API-first foundation. FastAPI validates job requests; SQLAlchemy persists job records. SQLite is the default local smoke-test database and Docker Compose configures PostgreSQL.
+FluxQueue is a FastAPI API plus a separate polling worker. SQLAlchemy persists jobs in PostgreSQL (the Docker Compose default). SQLite remains useful for isolated local tests.
 
 ```mermaid
 flowchart LR
   Client[Client] --> API[FastAPI API]
-  API --> DB[(Database)]
-  DB -. planned claim protocol .-> Worker[Worker pool]
-  Worker -. planned acknowledgement .-> DB
+  API --> DB[(PostgreSQL)]
+  Worker[Worker process] --> DB
+  Worker --> Registry[Registered handler registry]
   API --> Ops[Health and OpenAPI]
 ```
 
-Implemented routes: enqueue, list/filter/paginate, retrieve by ID, cancel queued/retry-wait jobs, queue counts, liveness, readiness.
+The API supports enqueue, retrieval, filtering, pagination, queue counts, cancellation of queued/retry-wait jobs, liveness, and readiness. The worker currently registers `echo`, `add_numbers`, and `uppercase`; unknown task names fail through the retry/dead-letter lifecycle rather than being dynamically imported or executed.
 
-## Target job lifecycle
+## Claim and lease protocol
 
-`queued -> running -> succeeded`
+The worker selects the highest-priority eligible job and locks the selected row with `FOR UPDATE SKIP LOCKED` on databases that support it. It changes the state to `running`, increments the attempt count, and assigns a random lease token and expiry in a short transaction. The handler runs outside that transaction.
 
-A retryable failure should transition through `retry_wait`; exhausted or permanent failures should transition to `dead`. A queued job can be cancelled. These target states are represented by the model, but worker execution, retries, leases, lease fencing, and scheduler promotion have not been implemented yet.
+A heartbeat renews the lease only while the same token owns a running job. Success and failure updates also require the current token, fencing out stale workers after a lease is reclaimed. Expired running leases can be reclaimed; a crashed job that has already consumed all attempts becomes `dead`.
 
-## Reliability requirements for the worker milestone
+## Retry behavior
 
-- Claim eligible jobs in a short database transaction using a safe concurrent-claim pattern.
-- Execute handlers outside the transaction.
-- Renew leases with a heartbeat and only acknowledge using the current lease generation/token.
-- Reclaim expired leases and prevent stale workers from overwriting newer state.
-- Use bounded exponential retry backoff with jitter.
-- Keep user payloads as validated data; dispatch only registered task handler names.
-- Test concurrent duplicate submissions and database failure behavior.
+Failures are stored as bounded error text. Jobs below their attempt limit transition to `retry_wait` with bounded exponential backoff and jitter. Exhausted jobs transition to `dead`. Side-effecting handlers must remain idempotent because a worker can complete an external side effect and crash before persisting success.
 
-## Migration and deployment boundary
+## Migrations and deployment
 
-Startup currently calls SQLAlchemy `create_all` to keep the first milestone easy to run. This is not a substitute for Alembic migrations. The API has no authentication yet and must not be exposed as a public service.
+Alembic applies the initial worker lease migration. The migration can add lease/scheduling fields to an existing `jobs` table and creates the full current schema for a fresh database. Docker Compose starts PostgreSQL, runs migrations before API startup, and starts the worker after API readiness.
+
+Authentication, tenant authorization, request limits, and public deployment hardening are still missing. The current API must not be exposed publicly.
