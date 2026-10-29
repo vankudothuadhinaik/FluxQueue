@@ -9,6 +9,7 @@
 - The worker claims eligible jobs with a lease token, increments attempt count, and renews leases with a heartbeat.
 - Success and failure updates require the current lease token, so an old worker cannot overwrite a newer claim.
 - Retryable failures use bounded exponential backoff with jitter; exhausted jobs become `dead`.
+- Jobs can be scheduled up to 24 hours ahead and are not eligible for claim until due.
 - Unknown task types fail as normal job errors; only explicitly registered handlers can run.
 
 The API/worker tests cover key transitions, but the full suite has not yet been confirmed green in GitHub Actions.
