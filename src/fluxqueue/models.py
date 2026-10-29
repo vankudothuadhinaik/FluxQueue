@@ -27,13 +27,16 @@ class JobStatus(StrEnum):
 class Job(Base):
     __tablename__ = "jobs"
     __table_args__ = (
-        UniqueConstraint("queue_name", "idempotency_key", name="uq_jobs_queue_idempotency"),
-        Index("ix_jobs_queue_status_created", "queue_name", "status", "created_at"),
+        UniqueConstraint(
+            "tenant_id", "queue_name", "idempotency_key", name="uq_jobs_tenant_queue_idempotency"
+        ),
+        Index("ix_jobs_tenant_queue_status_created", "tenant_id", "queue_name", "status", "created_at"),
         Index("ix_jobs_status_run_at", "status", "run_at"),
         Index("ix_jobs_status_lease_expiry", "status", "lease_expires_at"),
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    tenant_id: Mapped[str] = mapped_column(String(128), default="default", nullable=False)
     queue_name: Mapped[str] = mapped_column(String(128), default="default", nullable=False)
     task_type: Mapped[str] = mapped_column(String(128), nullable=False)
     payload: Mapped[dict] = mapped_column(JSON, nullable=False)
