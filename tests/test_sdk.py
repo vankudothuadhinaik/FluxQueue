@@ -97,7 +97,10 @@ def test_cli_submit_prints_json(monkeypatch, capsys):
             return {"id": "job-2", "status": "queued"}
 
     monkeypatch.setattr(cli, "FluxQueueClient", FakeClient)
-    assert main(["--api-key", "key", "submit", "--json", '{"task_type":"echo","payload":{}}']) == 0
+    assert (
+        main(["--api-key", "key", "submit", "--json", '{"task_type":"echo","payload":{}}'])
+        == 0
+    )
     assert json.loads(capsys.readouterr().out)["id"] == "job-2"
 
 
@@ -142,6 +145,9 @@ def test_sdk_rejects_non_json_success_response(monkeypatch):
 def test_sdk_wraps_network_errors(monkeypatch):
     from urllib.error import URLError
 
-    monkeypatch.setattr(sdk, "urlopen", lambda request, timeout: (_ for _ in ()).throw(URLError("offline")))
+    def fail_urlopen(request, timeout):
+        raise URLError("offline")
+
+    monkeypatch.setattr(sdk, "urlopen", fail_urlopen)
     with pytest.raises(FluxQueueError, match="Unable to reach"):
         FluxQueueClient("http://localhost", "key").get_job("job-1")
