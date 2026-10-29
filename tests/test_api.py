@@ -146,7 +146,8 @@ def test_delayed_job_persists_run_time(client):
 def test_non_finite_numbers_are_rejected_in_payload(client):
     response = client.post(
         "/api/v1/jobs",
-        json={"task_type": "echo", "payload": {"not_finite": float("nan")}},
+        content='{"task_type":"echo","payload":{"not_finite":NaN}}',
+        headers={"content-type": "application/json"},
     )
     assert response.status_code == 422
 
