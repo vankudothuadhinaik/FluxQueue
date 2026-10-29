@@ -7,10 +7,10 @@ from pathlib import Path
 from alembic.migration import MigrationContext
 from alembic.operations import Operations
 from sqlalchemy import (
+    JSON,
     Column,
     DateTime,
     Integer,
-    JSON,
     MetaData,
     String,
     Table,
@@ -50,7 +50,6 @@ def _legacy_jobs_table(engine):
     )
     metadata.create_all(engine)
     return jobs
-
 
 
 def test_tenant_migration_preserves_existing_jobs_and_scopes_idempotency():
