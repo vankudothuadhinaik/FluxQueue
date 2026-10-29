@@ -11,7 +11,7 @@ A durable job-processing platform built with FastAPI, SQLAlchemy, and PostgreSQL
 - Job retrieval, filtering, pagination, queue counts, and cancellation.
 - Separate worker process with registered handlers: `echo`, `add_numbers`, and `uppercase`.
 - Lease expiry/reclaim, heartbeat renewal, stale-token fencing, bounded exponential retry, and terminal `dead` state.
-- Non-root API/worker container, Alembic migrations, Docker Compose, SQLite unit/API tests, PostgreSQL concurrency integration tests, Ruff, CodeQL, Dependabot, and optional Codecov.
+- Non-root API/worker container, Alembic migrations, Docker Compose, SQLite unit/API tests, PostgreSQL concurrency integration tests, container startup/auth smoke checks, Ruff, CodeQL, Dependabot, and optional Codecov.
 
 ## Quick start
 
@@ -81,7 +81,7 @@ creates and drops the FluxQueue tables.
 
 The worker uses lease tokens to fence stale completion/failure writes and renews leases while a handler runs. Expired claims can be reclaimed. Execution is at-least-once: an external side effect may occur before a worker crashes and acknowledges it, so side-effecting handlers must be idempotent. SQLite is useful for local development; use PostgreSQL for multi-worker deployments and concurrency behavior.
 
-The shared API key is not tenant isolation. Per-tenant authorization, rate limiting, process-kill/database-outage fault injection, production secret management, and reproducible performance benchmarks remain release gates. Migration upgrade/downgrade checks and PostgreSQL row-locking integration tests run in CI, but their newest run must pass before those checks are considered verified.
+The shared API key is not tenant isolation. Per-tenant authorization, rate limiting, process-kill/database-outage fault injection, production secret management, and reproducible performance benchmarks remain release gates. See [deployment readiness](docs/deployment-readiness.md) for the pre-deployment checklist and required release evidence. Migration upgrade/downgrade checks and PostgreSQL row-locking integration tests run in CI, but their newest run must pass before those checks are considered verified.
 
 ## Integrations
 
@@ -89,7 +89,7 @@ Codecov upload activates when the repository Actions secret `CODECOV_TOKEN` is c
 
 ## CI status
 
-CI checks SQLite unit/API tests and a separate PostgreSQL service job for `SKIP LOCKED`, concurrent claims, expired-lease recovery, and stale-token fencing. The PostgreSQL job also validates the Alembic migration. The newly added PostgreSQL job has not yet been confirmed green; verify the newest [GitHub Actions run](https://github.com/vankudothuadhinaik/FluxQueue/actions) before release. Codecov upload is skipped unless `CODECOV_TOKEN` is configured.
+CI checks SQLite unit/API tests, builds the container and verifies it runs as non-root, smoke-tests startup/health/authenticated access, and runs a separate PostgreSQL service job for `SKIP LOCKED`, concurrent claims, expired-lease recovery, and stale-token fencing. The PostgreSQL job also validates the Alembic migration. The newly added PostgreSQL job has not yet been confirmed green; verify the newest [GitHub Actions run](https://github.com/vankudothuadhinaik/FluxQueue/actions) before release. Codecov upload is skipped unless `CODECOV_TOKEN` is configured.
 
 ## License
 
