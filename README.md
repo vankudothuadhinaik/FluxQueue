@@ -1,7 +1,6 @@
 # FluxQueue
 
 [![CI](https://github.com/vankudothuadhinaik/FluxQueue/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/vankudothuadhinaik/FluxQueue/actions/workflows/ci.yml)
-[![CodeQL](https://github.com/vankudothuadhinaik/FluxQueue/actions/workflows/ci.yml/badge.svg?branch=main&event=push)](https://github.com/vankudothuadhinaik/FluxQueue/security/code-scanning)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 A durable job-processing platform built with FastAPI, SQLAlchemy, and PostgreSQL.
