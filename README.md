@@ -5,12 +5,12 @@
 
 A durable job-processing platform built with FastAPI, SQLAlchemy, and PostgreSQL.
 
-> **Status: active foundation.** The API and a lease-based worker are implemented with starter tests. This is not yet production-hardened: authentication/tenant authorization, full fault-injection validation, and operational benchmarks remain open.
+> **Status: active foundation.** Tenant-scoped API authorization is implemented with a migration and regression tests. Production hardening still requires verified CI, rate limiting/quotas, fault-injection testing, benchmarks, and deployment review.
 
 ## Current capabilities
 
 - Validated job submission with a 64 KiB serialized-payload cap and commit-before-acceptance.
-- Queue-scoped idempotency keys with conflict detection.
+- Tenant-scoped API keys and tenant-isolated job reads, listings, cancellation, queue counts, and idempotency keys.
 - Job retrieval, filtering, pagination, queue counts, and cancellation.
 - Separate worker process with registered handlers: `echo`, `add_numbers`, and `uppercase`.
 - Lease expiry/reclaim, heartbeat renewal, stale-token fencing, bounded exponential retry, and terminal `dead` state.
@@ -32,7 +32,7 @@ curl -X POST http://localhost:8000/api/v1/jobs -H 'content-type: application/jso
 
 The worker polls the same PostgreSQL database and executes registered task types. Set `delay_seconds` from 0 to 86400 in a job request to schedule it for later; the worker will not claim it before its scheduled time. For arithmetic, use `task_type: "add_numbers"` with `payload: {"numbers":[1,2,3]}`; for text conversion, use `task_type: "uppercase"` with `payload: {"text":"fluxqueue"}`.
 
-The Compose database password is a local-development default. Set `POSTGRES_PASSWORD` before shared use. In production, set `APP_ENV=production` and a strong `API_KEY`; startup configuration fails if the key is missing. Send it as `Authorization: Bearer <API_KEY>`. The single shared API key is not tenant-level authorization.
+The Compose database password is a local-development default. Set `POSTGRES_PASSWORD` before shared use. For local development, `API_KEY` is optional. For production, set `APP_ENV=production` and configure `API_KEYS` as a JSON object mapping each high-entropy bearer key to a tenant identifier, for example `{"replace-with-a-long-random-secret":"tenant-a"}`. Send the key as `Authorization: Bearer <key>`. The legacy `API_KEY` setting is retained for single-tenant deployments and maps to the `default` tenant; it does not provide tenant isolation by itself. Store keys in Doppler or another secret manager, never in committed files.
 
 ## API
 
@@ -84,7 +84,7 @@ creates and drops the FluxQueue tables.
 
 The worker uses lease tokens to fence stale completion/failure writes and renews leases while a handler runs. Expired claims can be reclaimed. Execution is at-least-once: an external side effect may occur before a worker crashes and acknowledges it, so side-effecting handlers must be idempotent. SQLite is useful for local development; use PostgreSQL for multi-worker deployments and concurrency behavior.
 
-The shared API key is not tenant isolation. Per-tenant authorization, rate limiting, process-kill/database-outage fault injection, production secret management, and reproducible performance benchmarks remain release gates. See [deployment readiness](docs/deployment-readiness.md) for the pre-deployment checklist and required release evidence. Migration upgrade/downgrade checks and PostgreSQL row-locking integration tests run in CI, but their newest run must pass before those checks are considered verified.
+Tenant scope is derived exclusively from the authenticated API key, never from client-supplied request data. The `0002_tenant_isolation` migration backfills existing jobs into the `default` tenant and scopes idempotency keys by tenant and queue. Per-tenant authorization, rate limiting, process-kill/database-outage fault injection, production secret management, and reproducible performance benchmarks remain release gates. See [deployment readiness](docs/deployment-readiness.md) for the pre-deployment checklist and required release evidence. Migration upgrade/downgrade checks and PostgreSQL row-locking integration tests run in CI, but their newest run must pass before those checks are considered verified.
 
 ## Integrations
 
