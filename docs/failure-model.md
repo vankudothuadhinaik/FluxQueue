@@ -26,4 +26,4 @@ Execution is at-least-once, not exactly-once. A handler can perform an external 
 - PostgreSQL CI integration tests exercise row-lock skipping, concurrent claims, lease reclamation, and stale-token fencing. Process termination and database-restart fault injection remain outstanding.
 - Keep migration upgrade/downgrade checks green against fresh and existing schemas (covered by CI migration steps).
 - Distributed request rate limiting, key rotation/revocation, production secret handling, and operational controls remain required before public deployment. The serialized payload size cap is implemented and covered by API tests.
-- Run reproducible throughput/latency tests before making performance claims.
+- `scripts/benchmark_api.py` provides repeatable enqueue-throughput and API-latency measurements; it does not measure end-to-end completion. Run controlled load/soak tests before making performance claims.
