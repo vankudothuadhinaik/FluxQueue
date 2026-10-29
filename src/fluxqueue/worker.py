@@ -1,5 +1,6 @@
 """Worker claim, lease, completion, and retry primitives."""
 
+import os
 import random
 import socket
 import time
@@ -171,7 +172,7 @@ def _echo(payload: dict[str, Any]) -> dict[str, Any]:
 def _add_numbers(payload: dict[str, Any]) -> dict[str, Any]:
     numbers = payload.get("numbers")
     if not isinstance(numbers, list) or not numbers or any(
-        isinstance(value, bool) or not isinstance(value, (int, float)) for value in numbers
+        isinstance(value, bool) or not isinstance(value, int | float) for value in numbers
     ):
         raise ValueError("payload.numbers must be a non-empty list of numbers")
     return {"sum": sum(numbers)}
@@ -231,7 +232,7 @@ def run_once(*, worker_id: str, lease_seconds: int = DEFAULT_LEASE_SECONDS) -> b
 
 def main() -> None:
     """Poll until interrupted; each worker has a unique lease identity."""
-    worker_id = f"{socket.gethostname()}:{__import__('os').getpid()}:{uuid4().hex[:8]}"
+    worker_id = f"{socket.gethostname()}:{os.getpid()}:{uuid4().hex[:8]}"
     poll_seconds = 1.0
     while True:
         try:
