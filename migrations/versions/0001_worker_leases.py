@@ -1,7 +1,7 @@
 """Add scheduling and worker lease columns."""
 
-import sqlalchemy as sa
 from alembic import op
+import sqlalchemy as sa
 from sqlalchemy import inspect
 
 revision = "0001_worker_leases"
