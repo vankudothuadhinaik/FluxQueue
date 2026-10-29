@@ -38,7 +38,6 @@ def upgrade() -> None:
                     "uq_jobs_tenant_queue_idempotency",
                     ["tenant_id", "queue_name", "idempotency_key"],
                 )
-            batch.alter_column("tenant_id", server_default=None)
 
     inspector = inspect(bind)
     indexes = {index["name"] for index in inspector.get_indexes("jobs")}
