@@ -24,6 +24,7 @@ services:
       APP_ENV: ${APP_ENV:-development}
       API_KEY: ${API_KEY:-}
       API_KEYS: ${API_KEYS:-{}}
+      MAX_ACTIVE_JOBS_PER_TENANT: ${MAX_ACTIVE_JOBS_PER_TENANT:-1000}
     ports:
       - "127.0.0.1:8000:8000"
     depends_on:
