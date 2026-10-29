@@ -19,6 +19,18 @@ app = FastAPI(
 )
 
 
+@app.middleware("http")
+async def add_security_headers(request, call_next):
+    """Set baseline browser-facing headers; configure HSTS at the TLS proxy."""
+    response = await call_next(request)
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "DENY")
+    response.headers.setdefault("Referrer-Policy", "no-referrer")
+    response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+    response.headers.setdefault("Cache-Control", "no-store")
+    return response
+
+
 @app.exception_handler(RequestValidationError)
 async def request_validation_error_handler(request, exc: RequestValidationError) -> JSONResponse:
     """Return safe validation details without echoing non-JSON input values."""
