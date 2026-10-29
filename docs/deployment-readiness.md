@@ -4,8 +4,8 @@ FluxQueue is an early-stage job queue. Passing CI is necessary, but it does not 
 
 ## Before any shared environment
 
-- [ ] Set a unique, high-entropy `API_KEY` through the platform's secret manager.
-- [ ] Set `APP_ENV=production`; verify startup fails when `API_KEY` is absent.
+- [ ] Configure `API_KEYS` in the secret manager as a JSON mapping from high-entropy bearer keys to tenant IDs; use legacy `API_KEY` only for a single-tenant deployment.
+- [ ] Set `APP_ENV=production`; verify startup fails when both `API_KEY` and `API_KEYS` are absent.
 - [ ] Use managed PostgreSQL with TLS, backups, restricted network access, and a least-privilege database role.
 - [ ] Replace all local-only database credentials; do not commit `.env` files or secrets.
 - [ ] Restrict ingress to the intended private network or trusted reverse proxy. Terminate TLS at a configured proxy/load balancer.
@@ -15,7 +15,7 @@ FluxQueue is an early-stage job queue. Passing CI is necessary, but it does not 
 
 ## Required before public production
 
-- [ ] Replace the shared API key with an identity model suitable for the product; implement tenant isolation and per-tenant authorization.
+- [ ] Verify tenant isolation across listing, reads, cancellation, queue counts, and idempotency on the latest successful CI run; implement key rotation/revocation and per-tenant quotas.
 - [ ] Add rate limiting and request-body limits at the edge, plus per-tenant queue and job quotas.
 - [ ] Define and test secret rotation and revocation without logging credentials.
 - [ ] Test database outage, worker termination during a handler, lease expiry, retry exhaustion, and recovery after restart.
@@ -32,6 +32,6 @@ Record links to the exact commit, CI run, migration validation, PostgreSQL integ
 
 ## Current limitations
 
-- Authentication is a single shared bearer API key; tenant-level authorization is not implemented.
+- API keys map to tenant IDs when `API_KEYS` is configured. The legacy `API_KEY` maps to the `default` tenant and is not suitable for multi-tenant isolation. Individual user identities and self-service key rotation are not implemented.
 - Job execution is at-least-once. A worker can perform an external side effect and crash before acknowledging success.
 - The repository's CI smoke test checks container startup, health endpoints, and protected-route authentication. It does not validate a real reverse proxy, TLS termination, production secret manager, backup restoration, or production traffic.
