@@ -6,12 +6,13 @@ import os
 import random
 import socket
 import time
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from datetime import UTC, datetime, timedelta
 from threading import Event, Thread
 from typing import Any
 from uuid import uuid4
 
-from sqlalchemy import or_, select, update
+from sqlalchemy import or_, select, text, update
 from sqlalchemy.orm import Session
 
 from fluxqueue.db import SessionLocal
@@ -309,10 +310,48 @@ def run_once(*, worker_id: str, lease_seconds: int = DEFAULT_LEASE_SECONDS) -> b
     return True
 
 
+class _HealthHandler(BaseHTTPRequestHandler):
+    """Minimal health endpoints so a worker can run on a web-service free tier."""
+
+    def do_GET(self) -> None:
+        if self.path == "/health/live":
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(b'{"status":"alive"}')
+            return
+        if self.path == "/health/ready":
+            try:
+                with SessionLocal() as session:
+                    session.execute(text("SELECT 1"))
+            except Exception:
+                self.send_response(503)
+                self.end_headers()
+                self.wfile.write(b'{"status":"not_ready"}')
+                return
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(b'{"status":"ready","database":"reachable"}')
+            return
+        self.send_error(404)
+
+    def log_message(self, _format: str, *_args: object) -> None:
+        return
+
+
+def _start_health_server() -> None:
+    """Bind the Render-assigned port when the worker is deployed as a web service."""
+    port = os.environ.get("PORT")
+    if not port:
+        return
+    server = ThreadingHTTPServer(("0.0.0.0", int(port)), _HealthHandler)
+    Thread(target=server.serve_forever, name="worker-health-server", daemon=True).start()
+
+
 def main() -> None:
     """Poll until interrupted; each worker has a unique lease identity."""
     import signal
 
+    _start_health_server()
     worker_id = f"{socket.gethostname()}:{os.getpid()}:{uuid4().hex[:8]}"
     poll_seconds = 1.0
     shutdown = Event()
