@@ -19,7 +19,7 @@ The API supports enqueue with a 64 KiB serialized-payload limit, retrieval, filt
 
 The worker selects the highest-priority eligible job and locks the selected row with `FOR UPDATE SKIP LOCKED` on databases that support it. It changes the state to `running`, increments the attempt count, and assigns a random lease token and expiry in a short transaction. The handler runs outside that transaction.
 
-A heartbeat renews the lease only while the same token owns a running job. Success and failure updates also require the current token, fencing out stale workers after a lease is reclaimed. Expired running leases can be reclaimed; a crashed job that has already consumed all attempts becomes `dead`.
+A heartbeat renews the lease only while the same token owns a running job. Worker lifecycle logs record job claim, successful completion, failure state, and stale-lease rejection without logging job payloads. Success and failure updates also require the current token, fencing out stale workers after a lease is reclaimed. Expired running leases can be reclaimed; a crashed job that has already consumed all attempts becomes `dead`.
 
 ## Retry behavior
 
