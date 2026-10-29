@@ -5,7 +5,7 @@
 
 A durable job-processing platform built with FastAPI, SQLAlchemy, and PostgreSQL.
 
-> **Current status (2026-10-30):** Docker-first local staging passed, and CI for PR #17 passed at [run 40936739361](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40936739361), head `78f89b0`. Test, PostgreSQL integration, dependency audit, and security jobs passed; Codecov upload is included in the test job. The PR remains open and unmerged. These results do not establish production readiness.
+> **Current status (2026-10-30):** Docker-first local staging passed. Free-tier demo deployment is available at [fluxqueue-api.onrender.com](https://fluxqueue-api.onrender.com), backed by a dedicated Neon PostgreSQL project in Singapore. The API container can run the worker alongside the API via `RUN_WORKER=true`, suitable for a small demo. CI passed all four jobs for commit `6535330` in [run 40938441694](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40938441694). Free-tier services may sleep and have usage limits; this is not a production availability guarantee. The PR remains open and unmerged.
 
 ## Current capabilities
 
@@ -171,7 +171,7 @@ Codecov upload activates when the repository Actions secret `CODECOV_TOKEN` is c
 
 ## CI status and latest verification
 
-The latest verified CI run for PR #17 is [40936739361](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40936739361), for commit `78f89b0` on `feat/doppler-integration`. All four jobs passed:
+The latest verified CI run for PR #17 is [40938441694](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40938441694), for commit `6535330` on `feat/doppler-integration`. All four jobs passed:
 
 - `test`: compilation, migration checks, Ruff, unit/API tests, Compose and Doppler wiring validation, Docker build, non-root check, container smoke test, and Codecov upload. The workflow also syntax-checks the example Nginx configuration with a temporary self-signed certificate; this does not verify a real certificate, public TLS, or live proxy routing.
 - `postgres-integration`: PostgreSQL migration, locking, and lease-fencing checks.
@@ -193,7 +193,7 @@ The Docker-first local staging run and its detailed checks are recorded above an
 - Run controlled load and soak tests; record throughput, latency percentiles, worker concurrency, and database utilization.
 - Implement and test API-key rotation/revocation workflow; self-service key management is not implemented.
 
-Track evidence in [deployment readiness](docs/deployment-readiness.md). No cloud staging environment has been provisioned, and PR #17 remains open and unmerged.
+Track evidence in [deployment readiness](docs/deployment-readiness.md). A free-tier demo deployment is provisioned on Render with a dedicated Neon PostgreSQL project; it is not production staging. Free-tier sleep/usage limits, a combined API/worker process, and the remaining deployment-owner gates above still apply. PR #17 remains open and unmerged.
   
 ## License
 
