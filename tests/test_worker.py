@@ -108,3 +108,38 @@ def test_priority_zero_is_claimed_before_priority_nine(session):
     assert claimed is not None
     assert claimed["id"] == high.id
     assert session.get(Job, low.id).status == JobStatus.QUEUED.value
+
+def test_retry_delay_prevents_early_reclaim(session):
+    job = add_job(session, max_attempts=3)
+    claimed = claim_next_job(session, "worker-a")
+    assert claimed is not None
+    assert fail_job(
+        session,
+        job.id,
+        claimed["lease_token"],
+        "temporary",
+        retry_base_seconds=60,
+        retry_max_seconds=60,
+        jitter=False,
+    ) == JobStatus.RETRY_WAIT.value
+    assert claim_next_job(session, "worker-b") is None
+
+
+def test_expired_final_attempt_is_dead_lettered(session):
+    job = add_job(session, max_attempts=1)
+    claimed = claim_next_job(session, "worker-a", lease_seconds=-1)
+    assert claimed is not None
+    assert claim_next_job(session, "worker-b") is None
+    stored = session.get(Job, job.id)
+    assert stored.status == JobStatus.DEAD.value
+    assert stored.lease_token is None
+
+
+def test_only_registered_task_handlers_are_available():
+    from fluxqueue.worker import HANDLERS
+
+    assert set(HANDLERS) == {"echo", "add_numbers", "uppercase"}
+    assert HANDLERS["add_numbers"]({"numbers": [1, 2, 3]}) == {"sum": 6}
+    assert HANDLERS["uppercase"]({"text": "fluxqueue"}) == {"text": "FLUXQUEUE"}
+    with pytest.raises(ValueError):
+        HANDLERS["add_numbers"]({"numbers": ["__import__('os')"]})
