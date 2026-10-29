@@ -18,9 +18,11 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     env:
       DATABASE_URL: sqlite:///./ci-test.db
-      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -83,11 +85,10 @@ jobs:
             --header 'Authorization: Bearer ci-smoke-test-key' \
             http://127.0.0.1:8000/api/v1/jobs)" = "200"
       - name: Upload coverage to Codecov
-        if: env.CODECOV_TOKEN != ''
         uses: codecov/codecov-action@v5
         with:
           files: coverage.xml
-          token: ${{ env.CODECOV_TOKEN }}
+          use_oidc: true
           fail_ci_if_error: false
 
   postgres-integration:
