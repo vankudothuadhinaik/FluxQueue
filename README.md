@@ -66,7 +66,7 @@ Codecov upload activates when the repository Actions secret `CODECOV_TOKEN` is c
 
 ## CI status
 
-Check [GitHub Actions](https://github.com/vankudothuadhinaik/FluxQueue/actions) for current results. Recent runs have reported failures and the connected integration has not exposed job logs, so this change set is not represented as CI-verified.
+The latest completed test job validated fresh and legacy-schema migrations, passed Ruff lint/format checks, and passed **25 tests**. CodeQL analysis is still running, and Codecov upload is skipped unless the `CODECOV_TOKEN` secret is configured. Check [GitHub Actions](https://github.com/vankudothuadhinaik/FluxQueue/actions) for the newest run before release.
 
 ## License
 
