@@ -32,7 +32,9 @@ class Settings(BaseSettings):
         if is_production and not (self.api_key or self.api_keys):
             raise ValueError("API_KEY or API_KEYS must be configured when APP_ENV is production")
         if is_production and self.api_key and self.api_keys:
-            raise ValueError("Configure API_KEYS for tenant isolation or API_KEY for single-tenant use, not both")
+            raise ValueError(
+                "Configure API_KEYS for tenant isolation or API_KEY for single-tenant use, not both"
+            )
         return self
 
 
