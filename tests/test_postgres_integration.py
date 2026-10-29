@@ -10,7 +10,7 @@ from datetime import UTC, datetime, timedelta
 from threading import Barrier
 
 import pytest
-from sqlalchemy import create_engine, select
+from sqlalchemy import create_engine, func, select
 from sqlalchemy.orm import sessionmaker
 
 from fluxqueue.db import Base
@@ -106,3 +106,50 @@ def test_reclaimed_lease_fences_stale_completion(postgres_sessions):
         assert stored is not None
         assert stored.status == JobStatus.SUCCEEDED.value
         assert stored.result_json == {"fresh": True}
+
+
+def test_concurrent_enqueues_respect_tenant_active_job_quota(postgres_sessions, monkeypatch):
+    """Tenant advisory locks prevent concurrent requests from overshooting quota."""
+    from fastapi import HTTPException
+
+    from fluxqueue.config import settings
+    from fluxqueue.schemas import JobCreate
+    from fluxqueue.service import enqueue
+
+    monkeypatch.setattr(settings, "max_active_jobs_per_tenant", 1)
+    barrier = Barrier(2)
+
+    def submit(sequence: int) -> int:
+        with postgres_sessions() as session:
+            barrier.wait(timeout=5)
+            try:
+                enqueue(
+                    session,
+                    JobCreate(task_type="echo", payload={"sequence": sequence}),
+                    f"quota-test-{sequence}",
+                    "tenant-quota-test",
+                )
+            except HTTPException as exc:
+                return exc.status_code
+            return 202
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        statuses = list(pool.map(submit, (1, 2)))
+
+    assert sorted(statuses) == [202, 429]
+    with postgres_sessions() as session:
+        active_count = session.scalar(
+            select(func.count())
+            .select_from(Job)
+            .where(
+                Job.tenant_id == "tenant-quota-test",
+                Job.status.in_(
+                    [
+                        JobStatus.QUEUED.value,
+                        JobStatus.RUNNING.value,
+                        JobStatus.RETRY_WAIT.value,
+                    ]
+                ),
+            )
+        )
+    assert active_count == 1
