@@ -1,0 +1,28 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: fluxqueue
+      POSTGRES_USER: fluxqueue
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fluxqueue-local-only}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fluxqueue -d fluxqueue"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+  api:
+    build: .
+    environment:
+      DATABASE_URL: postgresql+psycopg://fluxqueue:${POSTGRES_PASSWORD:-fluxqueue-local-only}@db:5432/fluxqueue
+      APP_ENV: development
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+volumes:
+  postgres_data:
