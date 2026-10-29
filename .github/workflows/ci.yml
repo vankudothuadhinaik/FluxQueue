@@ -34,7 +34,18 @@ jobs:
         run: alembic downgrade base && alembic upgrade head
       - run: ruff check .
       - run: ruff format --check .
-      - run: pytest --cov=fluxqueue --cov-report=xml
+      - name: Run unit and API tests
+        run: pytest --cov=fluxqueue --cov-report=xml --junitxml=junit.xml
+      - name: Archive test and coverage reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fluxqueue-test-reports
+          path: |
+            junit.xml
+            coverage.xml
+          if-no-files-found: warn
+          retention-days: 14
       - name: Build container image
         run: docker build --tag fluxqueue-ci .
       - name: Verify container runs as non-root
@@ -102,7 +113,15 @@ jobs:
       - name: Validate PostgreSQL migration
         run: alembic upgrade head
       - name: Exercise PostgreSQL locking and lease fencing
-        run: pytest -q tests/test_postgres_integration.py
+        run: pytest -q tests/test_postgres_integration.py --junitxml=postgres-junit.xml
+      - name: Archive PostgreSQL integration report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fluxqueue-postgres-integration-report
+          path: postgres-junit.xml
+          if-no-files-found: warn
+          retention-days: 14
 
   security:
     continue-on-error: true
