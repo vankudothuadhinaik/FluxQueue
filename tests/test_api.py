@@ -102,3 +102,11 @@ def test_production_settings_require_api_key():
 
     with pytest.raises(ValidationError):
         Settings(app_env="production", api_key=None)
+
+
+def test_oversized_payload_is_rejected(client):
+    response = client.post(
+        "/api/v1/jobs",
+        json={"task_type": "echo", "payload": {"data": "x" * 65_537}},
+    )
+    assert response.status_code == 422
