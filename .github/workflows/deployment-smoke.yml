@@ -2,8 +2,6 @@ name: Deployment smoke test
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: "17 4 * * 1"
 
 permissions:
   contents: read
@@ -41,11 +39,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          payload="$(jq -nc --arg marker "deployment-smoke-$(date +%s)" '{task_type:"echo",payload:{message:$marker},queue:"deployment-smoke",priority:5,max_attempts:2}')"
+          marker="deployment-smoke-$(date +%s)"
+          payload="$(jq -nc --arg marker "$marker" '{task_type:"echo",payload:{message:$marker},queue:"deployment-smoke",priority:5,max_attempts:2}')"
           response="$(curl --fail --silent --show-error -X POST "$BASE_URL/api/v1/jobs" \
             -H "Authorization: Bearer $API_KEY" \
             -H 'Content-Type: application/json' \
-            -H "Idempotency-Key: deployment-smoke-$(date +%s)" \
+            -H "Idempotency-Key: $marker" \
             --data "$payload")"
           job_id="$(jq -er '.id' <<<"$response")"
           echo "Submitted job id: $job_id"
@@ -55,7 +54,7 @@ jobs:
             status="$(jq -r '.status' <<<"$current")"
             echo "Poll $attempt: status=$status"
             if [[ "$status" == "succeeded" ]]; then
-              jq -e '.result_json.payload.message | startswith("deployment-smoke-")' <<<"$current" >/dev/null
+              jq -e --arg marker "$marker" '.result_json.payload.message == $marker' <<<"$current" >/dev/null
               echo "End-to-end job processing passed."
               exit 0
             fi
