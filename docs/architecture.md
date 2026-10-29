@@ -1,17 +1,36 @@
 # Architecture
 
-## Current foundation
+## Current implementation
 
-A FastAPI service with SQLAlchemy stores job records. The database is the source of truth. The API accepts JSON payloads and stores named task types; it does not execute submitted code.
+FluxQueue is currently an API-first foundation. FastAPI validates job requests; SQLAlchemy persists job records. SQLite is the default local smoke-test database and Docker Compose configures PostgreSQL.
 
 ```mermaid
 flowchart LR
-  Client --> API[FastAPI]
-  API --> DB[(PostgreSQL)]
-  DB -. planned lease claim .-> Worker[Worker processes]
+  Client[Client] --> API[FastAPI API]
+  API --> DB[(Database)]
+  DB -. planned claim protocol .-> Worker[Worker pool]
   Worker -. planned acknowledgement .-> DB
+  API --> Ops[Health and OpenAPI]
 ```
 
-Current endpoints support enqueue, retrieval, filtering, queue counts, health checks, and cancelling queued jobs. Worker claiming, leases/fencing, scheduling, retries, and the dashboard are not yet implemented.
+Implemented routes: enqueue, list/filter/paginate, retrieve by ID, cancel queued/retry-wait jobs, queue counts, liveness, readiness.
 
-SQLite is useful for local smoke tests; PostgreSQL is the intended concurrency database. Startup schema creation is a temporary convenience; Alembic migrations are required before production use.
+## Target job lifecycle
+
+`queued -> running -> succeeded`
+
+A retryable failure should transition through `retry_wait`; exhausted or permanent failures should transition to `dead`. A queued job can be cancelled. These target states are represented by the model, but worker execution, retries, leases, lease fencing, and scheduler promotion have not been implemented yet.
+
+## Reliability requirements for the worker milestone
+
+- Claim eligible jobs in a short database transaction using a safe concurrent-claim pattern.
+- Execute handlers outside the transaction.
+- Renew leases with a heartbeat and only acknowledge using the current lease generation/token.
+- Reclaim expired leases and prevent stale workers from overwriting newer state.
+- Use bounded exponential retry backoff with jitter.
+- Keep user payloads as validated data; dispatch only registered task handler names.
+- Test concurrent duplicate submissions and database failure behavior.
+
+## Migration and deployment boundary
+
+Startup currently calls SQLAlchemy `create_all` to keep the first milestone easy to run. This is not a substitute for Alembic migrations. The API has no authentication yet and must not be exposed as a public service.
