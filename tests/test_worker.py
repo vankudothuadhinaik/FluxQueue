@@ -86,7 +86,10 @@ def test_failed_job_enters_retry_wait_then_can_be_claimed(session):
     second = claim_next_job(session, "worker-b")
     assert second is not None
     assert second["attempt_count"] == 2
-    assert fail_job(session, job.id, second["lease_token"], "again", jitter=False) == JobStatus.DEAD.value
+    assert (
+        fail_job(session, job.id, second["lease_token"], "again", jitter=False)
+        == JobStatus.DEAD.value
+    )
     assert session.get(Job, job.id).status == JobStatus.DEAD.value
 
 
