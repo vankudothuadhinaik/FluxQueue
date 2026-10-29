@@ -88,6 +88,8 @@ The shared API key is not tenant isolation. Per-tenant authorization, rate limit
 
 ## Integrations
 
+See [developer tooling and integrations](docs/integrations.md) for GitHub Actions, Codecov, Doppler, CodeScene, Copilot, and Codex setup and verification boundaries.
+
 Codecov upload activates when the repository Actions secret `CODECOV_TOKEN` is configured. Doppler tokens must be supplied through a secret manager, never committed. CodeScene must be configured through its service UI. Configuration in documentation alone does not prove that an integration is active.
 
 ## CI status
