@@ -27,6 +27,6 @@ Failures are stored as bounded error text. Jobs below their attempt limit transi
 
 ## Migrations and deployment
 
-Alembic applies the initial worker lease migration. The migration can add lease/scheduling fields to an existing `jobs` table and creates the full current schema for a fresh database. Docker Compose starts PostgreSQL, runs migrations before API startup, and starts the worker after API readiness.
+Alembic applies the initial worker lease migration and the tenant-isolation migration (`0002_tenant_isolation`). The migration can add lease/scheduling fields to an existing `jobs` table and creates the full current schema for a fresh database. Docker Compose starts PostgreSQL, runs migrations before API startup, and starts the worker after API readiness.
 
 Job retrieval, listing, cancellation, queue aggregates, and idempotency lookups are filtered by the authenticated tenant. Migration `0002_tenant_isolation` backfills existing jobs to `default` and scopes the uniqueness constraint by tenant, queue, and idempotency key. Production settings fail closed unless `API_KEY` or `API_KEYS` is configured. Per-user identities, rate limiting, per-tenant quotas, process-kill/database-outage fault injection, and full public deployment hardening are still missing. CI includes PostgreSQL integration checks for `SKIP LOCKED`, concurrent claims, lease reclamation, and stale-token fencing; these checks must pass on the latest run before release. The current API must not be exposed publicly until those are addressed.
