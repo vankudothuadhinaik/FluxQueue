@@ -208,15 +208,13 @@ def test_tenants_cannot_read_cancel_or_list_each_others_jobs(client, monkeypatch
 
     assert client.get(f"/api/v1/jobs/{first_job['id']}", headers=tenant_b).status_code == 404
     assert (
-        client.post(f"/api/v1/jobs/{first_job['id']}/cancel", headers=tenant_b).status_code
-        == 404
+        client.post(f"/api/v1/jobs/{first_job['id']}/cancel", headers=tenant_b).status_code == 404
     )
     assert client.get("/api/v1/queues", headers=tenant_b).json() == [
         {"name": "mail", "counts": {"queued": 1}}
     ]
     assert (
-        client.get(f"/api/v1/jobs/{first_job['id']}", headers=tenant_a).json()["status"]
-        == "queued"
+        client.get(f"/api/v1/jobs/{first_job['id']}", headers=tenant_a).json()["status"] == "queued"
     )
 
 
