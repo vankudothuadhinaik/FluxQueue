@@ -19,12 +19,7 @@ class FluxQueueError(RuntimeError):
 
 
 class FluxQueueClient:
-    """Synchronous JSON client.
-
-    Example:
-        client = FluxQueueClient("http://127.0.0.1:8000", api_key="dev-key")
-        job = client.submit({"task_type": "echo", "payload": {"message": "hello"}})
-    """
+    """Synchronous JSON client."""
 
     def __init__(self, base_url: str, api_key: str, *, timeout: float = 10.0) -> None:
         if not base_url.strip():
@@ -37,9 +32,11 @@ class FluxQueueClient:
         if parsed_url.scheme not in {"http", "https"} or not parsed_url.hostname:
             raise ValueError("base_url must be an absolute HTTP(S) URL")
         try:
-            parsed_url.port
+            port = parsed_url.port
         except ValueError as exc:
             raise ValueError("base_url must contain a valid port") from exc
+        if port is not None and not 1 <= port <= 65535:
+            raise ValueError("base_url must contain a valid port")
         if (
             parsed_url.username
             or parsed_url.password
