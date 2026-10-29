@@ -86,6 +86,20 @@ jobs:
           test "$(curl --silent --output /dev/null --write-out '%{http_code}' \
             --header 'Authorization: Bearer ci-smoke-test-key' \
             http://127.0.0.1:8000/api/v1/jobs)" = "200"
+      - name: Validate example Nginx configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          cert_dir="$(mktemp -d)"
+          trap 'rm -rf "$cert_dir"' EXIT
+          openssl req -x509 -nodes -newkey rsa:2048 -days 1 \
+            -keyout "$cert_dir/privkey.pem" \
+            -out "$cert_dir/fullchain.pem" \
+            -subj "/CN=fluxqueue.example.com" >/dev/null 2>&1
+          docker run --rm \
+            --volume "$PWD/deploy/nginx/fluxqueue.conf.example:/etc/nginx/conf.d/fluxqueue.conf:ro" \
+            --volume "$cert_dir:/etc/letsencrypt/live/fluxqueue.example.com:ro" \
+            nginx:alpine nginx -t
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
