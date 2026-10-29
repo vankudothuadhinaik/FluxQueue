@@ -94,7 +94,7 @@ Codecov upload activates when the repository Actions secret `CODECOV_TOKEN` is c
 
 ## CI status
 
-CI runs on pushes, pull requests, and a weekly schedule. It checks SQLite unit/API tests, builds the container and verifies it runs as non-root, smoke-tests startup/health/authenticated access, archives machine-readable test reports, audits resolved Python dependencies, and runs a separate PostgreSQL service job for `SKIP LOCKED`, concurrent claims, expired-lease recovery, and stale-token fencing. The PostgreSQL job also validates the Alembic migration. The newly added PostgreSQL job has not yet been confirmed green; verify the newest [GitHub Actions run](https://github.com/vankudothuadhinaik/FluxQueue/actions) before release. Codecov upload is skipped unless `CODECOV_TOKEN` is configured.
+CI runs automatically on pushes, pull requests, and a weekly schedule. It checks SQLite unit/API tests, builds the container and verifies it runs as non-root, smoke-tests startup/health/authenticated access, archives machine-readable test reports, audits resolved Python dependencies, and runs a separate PostgreSQL service job for `SKIP LOCKED`, concurrent claims, expired-lease recovery, and stale-token fencing. The PostgreSQL job also validates the Alembic migration. Treat a release as blocked unless the latest required CI checks pass; use GitHub's native check status and uploaded test reports as evidence, not screenshots or copied logs. Codecov upload is skipped unless `CODECOV_TOKEN` is configured.
 
 ## License
 
