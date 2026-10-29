@@ -43,6 +43,41 @@ The Compose database password is a local-development default. Set `POSTGRES_PASS
 - `GET /api/v1/queues`
 - `GET /health/live` and `GET /health/ready`
 
+## Python SDK and CLI
+
+Install FluxQueue in the environment where you want to call the API:
+
+```bash
+python -m pip install -e .
+```
+
+The dependency-free synchronous Python client supports submit, get, list, cancel, and queue counts:
+
+```python
+from fluxqueue.sdk import FluxQueueClient
+
+client = FluxQueueClient("http://127.0.0.1:8000", api_key="your-tenant-key")
+job = client.submit(
+    {"task_type": "echo", "payload": {"message": "hello"}},
+    idempotency_key="example-001",
+)
+print(client.get_job(job["id"]))
+print(client.list_jobs(status="queued", limit=20))
+print(client.list_queues())
+```
+
+The CLI exposes the same operations. Configure `FLUXQUEUE_URL` and `FLUXQUEUE_API_KEY`, or pass `--base-url` and `--api-key`:
+
+```bash
+fluxqueue submit --json '{"task_type":"echo","payload":{"message":"hello"}}'
+fluxqueue get JOB_ID
+fluxqueue list --status queued --limit 20
+fluxqueue cancel JOB_ID
+fluxqueue queues
+```
+
+For production, the SDK requires HTTPS for non-local hosts; plain HTTP is accepted only for loopback development addresses. Do not put API keys in command history on shared machines; prefer environment variables or a secret manager. SDK HTTP errors raise `FluxQueueError`, which exposes the HTTP `status_code` when available.
+
 ## Local development
 
 ```powershell
