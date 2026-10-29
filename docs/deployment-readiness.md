@@ -16,8 +16,8 @@ FluxQueue is an early-stage job queue. Passing CI is necessary, but it does not 
 
 ## Required before public production
 
-- [ ] Verify tenant isolation across listing, reads, cancellation, queue counts, and idempotency on the latest successful CI run; implement key rotation/revocation and per-tenant quotas.
-- [ ] Add rate limiting and request-body limits at the edge, plus per-tenant queue and job quotas.
+- [ ] Verify tenant isolation and `MAX_ACTIVE_JOBS_PER_TENANT` enforcement on the latest successful CI run; implement and test key rotation/revocation.
+- [ ] Add distributed rate limiting and request-body limits at the edge. The API enforces a PostgreSQL-serialized active-job quota per tenant; verify the configured limit matches capacity.
 - [ ] Define and test secret rotation and revocation without logging credentials.
 - [ ] Test database outage, worker termination during a handler, lease expiry, retry exhaustion, and recovery after restart.
 - [ ] Verify every external side-effecting handler is idempotent; execution is at-least-once, not exactly-once.
