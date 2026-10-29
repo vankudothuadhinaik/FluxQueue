@@ -107,7 +107,8 @@ measurement distinction.
 - Preserve logs, test reports, relevant metrics, configuration (with secrets removed), and exact
   commit/image identifiers.
 - Confirm no test workload remains and the isolated environment is shut down.
-- Record each scenario as PASS, FAIL, or NOT RUN, with evidence links and an owner for every failure.
+- Record each scenario as PASS, FAIL, or NOT RUN, with evidence links and an owner
+  for every failure.
 - Update `docs/deployment-readiness.md` only after the evidence has been reviewed. A written
   procedure, CI workflow definition, or a successful baseline does not prove fault injection,
   soak testing, production TLS, backup restoration, or secret-manager integration passed.
