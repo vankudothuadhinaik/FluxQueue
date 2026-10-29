@@ -97,7 +97,8 @@ def test_configured_api_key_protects_all_api_route_families(client, monkeypatch)
         ("GET", "/api/v1/queues"),
     ]
     for method, path in protected_requests:
-        response = client.request(method, path)
+        kwargs = {"json": {"task_type": "echo", "payload": {}}} if path == "/api/v1/jobs" and method == "POST" else {}
+        response = client.request(method, path, **kwargs)
         assert response.status_code == 401, f"{method} {path}: {response.status_code}"
 
     assert client.get(
