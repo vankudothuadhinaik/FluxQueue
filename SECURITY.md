@@ -5,7 +5,7 @@ Report vulnerabilities privately to the repository owner; do not publish exploit
 ## Current security boundaries
 
 - This is an early-stage API; do not expose it to the public internet.
-- Authentication and tenant authorization are not implemented.
+- A shared bearer API key is supported for protected job/queue routes. Tenant-level authorization and per-user identities are not implemented. Production configuration requires `API_KEY`.
 - Never accept shell commands, import paths, or executable code as job payloads.
 - Never commit credentials, tokens, local environment files, or database files.
 - Replace local-only database passwords before shared use.
