@@ -29,4 +29,4 @@ Failures are stored as bounded error text. Jobs below their attempt limit transi
 
 Alembic applies the initial worker lease migration. The migration can add lease/scheduling fields to an existing `jobs` table and creates the full current schema for a fresh database. Docker Compose starts PostgreSQL, runs migrations before API startup, and starts the worker after API readiness.
 
-Authentication, tenant authorization, request limits, and public deployment hardening are still missing. The current API must not be exposed publicly.
+A shared bearer API key protects job/queue routes when configured, and production settings fail closed without one. Tenant authorization, per-user identities, request/payload limits, and full public deployment hardening are still missing. The current API must not be exposed publicly until those are addressed.
