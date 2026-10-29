@@ -105,3 +105,43 @@ def test_cli_reports_missing_api_key():
     with pytest.raises(SystemExit) as exc:
         main(["list"])
     assert exc.value.code == 2
+
+
+
+def test_sdk_rejects_invalid_constructor_settings():
+    with pytest.raises(ValueError, match="base_url"):
+        FluxQueueClient("", "key")
+    with pytest.raises(ValueError, match="api_key"):
+        FluxQueueClient("http://localhost", " ")
+    with pytest.raises(ValueError, match="timeout"):
+        FluxQueueClient("http://localhost", "key", timeout=0)
+
+
+def test_sdk_encodes_job_identifier_as_one_path_segment(monkeypatch):
+    captured = {}
+
+    def fake_urlopen(request, timeout):
+        captured["url"] = request.full_url
+        return FakeResponse({"id": "safe"})
+
+    monkeypatch.setattr(sdk, "urlopen", fake_urlopen)
+    FluxQueueClient("http://localhost", "key").get_job("../admin?x=1")
+    assert captured["url"] == "http://localhost/api/v1/jobs/..%2Fadmin%3Fx%3D1"
+
+
+def test_sdk_rejects_non_json_success_response(monkeypatch):
+    class InvalidResponse(FakeResponse):
+        def __init__(self):
+            self.payload = b"not-json"
+
+    monkeypatch.setattr(sdk, "urlopen", lambda request, timeout: InvalidResponse())
+    with pytest.raises(FluxQueueError, match="invalid JSON"):
+        FluxQueueClient("http://localhost", "key").get_job("job-1")
+
+
+def test_sdk_wraps_network_errors(monkeypatch):
+    from urllib.error import URLError
+
+    monkeypatch.setattr(sdk, "urlopen", lambda request, timeout: (_ for _ in ()).throw(URLError("offline")))
+    with pytest.raises(FluxQueueError, match="Unable to reach"):
+        FluxQueueClient("http://localhost", "key").get_job("job-1")
