@@ -89,4 +89,17 @@ def test_tenant_migration_preserves_existing_jobs_and_scopes_idempotency():
         assert row.id == "legacy-job"
         assert row.payload == {"message": "keep me"}
         assert connection.execute(text("SELECT tenant_id FROM jobs")).scalar_one() == "default"
+
+        with Operations.context(context):
+            migration.downgrade()
+        inspector = inspect(connection)
+        columns_after_downgrade = {
+            column["name"] for column in inspector.get_columns("jobs")
+        }
+        assert "tenant_id" not in columns_after_downgrade
+        constraints_after_downgrade = {
+            item.get("name") for item in inspector.get_unique_constraints("jobs")
+        }
+        assert "uq_jobs_queue_idempotency" in constraints_after_downgrade
+        assert connection.execute(select(jobs.c.id)).scalar_one() == "legacy-job"
     engine.dispose()
