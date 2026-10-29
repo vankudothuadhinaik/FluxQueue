@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote, urlsplit
@@ -30,11 +31,15 @@ class FluxQueueClient:
             raise ValueError("base_url must not be empty")
         if not api_key.strip():
             raise ValueError("api_key must not be empty")
-        if timeout <= 0:
-            raise ValueError("timeout must be greater than zero")
+        if not math.isfinite(timeout) or timeout <= 0:
+            raise ValueError("timeout must be a finite number greater than zero")
         parsed_url = urlsplit(base_url)
         if parsed_url.scheme not in {"http", "https"} or not parsed_url.hostname:
             raise ValueError("base_url must be an absolute HTTP(S) URL")
+        try:
+            parsed_url.port
+        except ValueError as exc:
+            raise ValueError("base_url must contain a valid port") from exc
         if (
             parsed_url.username
             or parsed_url.password
