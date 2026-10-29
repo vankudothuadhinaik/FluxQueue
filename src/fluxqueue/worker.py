@@ -209,7 +209,10 @@ def _add_numbers(payload: dict[str, Any]) -> dict[str, Any]:
         )
     ):
         raise ValueError("payload.numbers must be a non-empty list of finite numbers")
-    return {"sum": sum(numbers)}
+    total = sum(numbers)
+    if isinstance(total, float) and not math.isfinite(total):
+        raise ValueError("payload.numbers sum must be finite")
+    return {"sum": total}
 
 
 def _uppercase(payload: dict[str, Any]) -> dict[str, Any]:
