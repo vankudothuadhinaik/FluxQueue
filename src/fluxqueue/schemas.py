@@ -20,7 +20,12 @@ class JobCreate(BaseModel):
     @field_validator("payload")
     @classmethod
     def enforce_payload_size(cls, value: dict[str, Any]) -> dict[str, Any]:
-        encoded = json.dumps(value, ensure_ascii=False, separators=(",", ":"), allow_nan=False).encode("utf-8")
+        encoded = json.dumps(
+            value,
+            ensure_ascii=False,
+            separators=(",", ":"),
+            allow_nan=False,
+        ).encode("utf-8")
         if len(encoded) > 65_536:
             raise ValueError("payload must be at most 64 KiB when encoded as JSON")
         return value
