@@ -274,3 +274,14 @@ def test_unicode_api_key_comparison_is_supported(monkeypatch):
     monkeypatch.setattr(settings, "api_key", None)
     monkeypatch.setattr(settings, "api_keys", {"clé-secret": "tenant-a"})
     assert require_api_key("Bearer clé-secret") == "tenant-a"
+
+
+def test_tenant_api_key_settings_reject_invalid_tenant_ids():
+    from pydantic import ValidationError
+
+    from fluxqueue.config import Settings
+
+    with pytest.raises(ValidationError):
+        Settings(app_env="production", api_keys={"valid-secret": ""})
+    with pytest.raises(ValidationError):
+        Settings(app_env="production", api_keys={"valid-secret": "x" * 129})
