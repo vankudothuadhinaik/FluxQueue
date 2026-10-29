@@ -294,3 +294,47 @@ def test_security_headers_are_set_on_api_responses(client):
     assert response.headers["x-frame-options"] == "DENY"
     assert response.headers["referrer-policy"] == "no-referrer"
     assert response.headers["cache-control"] == "no-store"
+
+
+def test_active_job_quota_is_enforced_per_tenant(client, monkeypatch):
+    from fluxqueue.auth import settings as auth_settings
+
+    monkeypatch.setattr(auth_settings, "api_key", None)
+    monkeypatch.setattr(
+        auth_settings,
+        "api_keys",
+        {"tenant-a-secret": "tenant-a", "tenant-b-secret": "tenant-b"},
+    )
+    monkeypatch.setattr(auth_settings, "max_active_jobs_per_tenant", 1)
+
+    tenant_a = {"Authorization": "Bearer tenant-a-secret"}
+    tenant_b = {"Authorization": "Bearer tenant-b-secret"}
+    first = client.post(
+        "/api/v1/jobs",
+        json={"task_type": "echo", "payload": {"n": 1}},
+        headers=tenant_a,
+    )
+    assert first.status_code == 202
+    rejected = client.post(
+        "/api/v1/jobs",
+        json={"task_type": "echo", "payload": {"n": 2}},
+        headers=tenant_a,
+    )
+    assert rejected.status_code == 429
+    assert rejected.headers["retry-after"] == "5"
+    accepted_for_other_tenant = client.post(
+        "/api/v1/jobs",
+        json={"task_type": "echo", "payload": {"n": 3}},
+        headers=tenant_b,
+    )
+    assert accepted_for_other_tenant.status_code == 202
+
+
+def test_idempotent_retry_is_allowed_when_tenant_quota_is_full(client, monkeypatch):
+    from fluxqueue.auth import settings
+
+    monkeypatch.setattr(settings, "max_active_jobs_per_tenant", 1)
+    headers = {"Idempotency-Key": "quota-idempotency"}
+    first = submit(client, headers=headers)
+    duplicate = submit(client, headers=headers)
+    assert duplicate["id"] == first["id"]
