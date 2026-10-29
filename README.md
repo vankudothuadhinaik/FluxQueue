@@ -5,7 +5,7 @@
 
 A durable job-processing platform built with FastAPI, SQLAlchemy, and PostgreSQL.
 
-> **Current status (2026-10-30):** Docker-first local staging passed. Free-tier demo deployment is available at [fluxqueue-api.onrender.com](https://fluxqueue-api.onrender.com), backed by a dedicated Neon PostgreSQL project in Singapore. The API container can run the worker alongside the API via `RUN_WORKER=true`, suitable for a small demo. CI passed all four jobs for commit `6535330` in [run 40938441694](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40938441694). Free-tier services may sleep and have usage limits; this is not a production availability guarantee. The PR remains open and unmerged.
+> **Current status (2026-10-30):** Docker-first local staging passed. Free-tier demo deployment is available at [fluxqueue-api.onrender.com](https://fluxqueue-api.onrender.com), backed by a dedicated Neon PostgreSQL project in Singapore. The API container can run the worker alongside the API via `RUN_WORKER=true`, suitable for a small demo. CI passed all four jobs for latest code commit `4b9dec8` in [run 40939078055](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40939078055). Free-tier services may sleep and have usage limits; this is not a production availability guarantee. The PR remains open and unmerged.
 
 ## Current capabilities
 
