@@ -6,10 +6,11 @@ from datetime import UTC, datetime, timedelta
 from typing import NamedTuple
 
 from fastapi import HTTPException
-from sqlalchemy import func, select, update
+from sqlalchemy import func, select, text, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from fluxqueue.config import settings
 from fluxqueue.models import Job, JobStatus
 from fluxqueue.schemas import JobCreate
 
@@ -46,6 +47,34 @@ def enqueue(
                     detail="Idempotency key reused with different request",
                 )
             return existing
+
+    # PostgreSQL advisory locks serialize quota checks for the same tenant across API replicas.
+    if session.get_bind().dialect.name == "postgresql":
+        session.execute(
+            text("SELECT pg_advisory_xact_lock(hashtextextended(:tenant_id, 0))"),
+            {"tenant_id": tenant_id},
+        )
+    active_jobs = session.scalar(
+        select(func.count())
+        .select_from(Job)
+        .where(
+            Job.tenant_id == tenant_id,
+            Job.status.in_(
+                [
+                    JobStatus.QUEUED.value,
+                    JobStatus.RUNNING.value,
+                    JobStatus.RETRY_WAIT.value,
+                ]
+            ),
+        )
+    ) or 0
+    if active_jobs >= settings.max_active_jobs_per_tenant:
+        session.rollback()
+        raise HTTPException(
+            status_code=429,
+            detail="Tenant active job quota exceeded",
+            headers={"Retry-After": "5"},
+        )
 
     now = datetime.now(UTC)
     job = Job(
