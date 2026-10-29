@@ -91,7 +91,7 @@ jobs:
         with:
           files: coverage.xml
           token: ${{ secrets.CODECOV_TOKEN }}
-          fail_ci_if_error: false
+          fail_ci_if_error: true
 
   postgres-integration:
     runs-on: ubuntu-latest
@@ -157,11 +157,9 @@ jobs:
         with:
           languages: python
           queries: security-extended
-      # Keep CI usable when GitHub code scanning is not enabled for this repository.
-      # SARIF is retained as an artifact; enabling code scanning allows upload to Security alerts.
       - uses: github/codeql-action/analyze@v4
         with:
-          upload: false
+          upload: true
           output: results
       - name: Archive CodeQL SARIF results
         if: always()

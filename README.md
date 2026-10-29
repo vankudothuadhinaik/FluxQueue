@@ -5,7 +5,7 @@
 
 A durable job-processing platform built with FastAPI, SQLAlchemy, and PostgreSQL.
 
-> **Current status (2026-10-29): Doppler integration and CI hardening are implemented on PR #17.** Latest verified CI run: [40923030906](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40923030906) on commit `96604ce`; all four jobs passed, including the Codecov upload step after the repository owner reported updating `CODECOV_TOKEN`. The PR remains open and unmerged. CI success does **not** mean production readiness: confirm revocation of the previously exposed Codecov token in Codecov, and complete real proxy/TLS validation, backup restoration, operations monitoring, and load/soak testing before public deployment.
+> **Current status (2026-10-29): Doppler integration and CI hardening are implemented on PR #17.** The latest pre-hardening CI run is [40926045141](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40926045141) on commit `ab303b1`; core jobs passed, but Codecov processing failed with `Token required because branch is protected`. The workflow now fails on Codecov upload errors and attempts CodeQL publication. The PR remains open and unmerged pending a valid FluxQueue Codecov token and external production gates.
 
 ## Current capabilities
 
@@ -155,12 +155,12 @@ Codecov upload activates when the repository Actions secret `CODECOV_TOKEN` is c
 
 ## CI status and latest verification
 
-CI runs on pushes, pull requests, and a weekly schedule. The latest verified CI run for PR #17 is [run 40923030906](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40923030906), associated with commit `96604ce`. All four CI jobs passed, including the Codecov upload step. The CodeScene PR review also passed its quality gates:
+CI runs on pushes, pull requests, and a weekly schedule. The latest pre-hardening run for PR #17 is [run 40926045141](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40926045141), associated with commit `ab303b1`. Core jobs and CodeScene passed, but Codecov processing failed because the protected-branch upload did not accept the configured secret. The workflow now treats that failure as blocking and publishes CodeQL SARIF when supported:
 
-- `test`: compilation, fresh/upgrade migration checks, Ruff, unit/API tests, Compose and Doppler wiring validation, container build/non-root check, protected-route smoke test, and Codecov upload.
+- `test`: compilation, fresh/upgrade migration checks, Ruff, unit/API tests, Compose and Doppler wiring validation, container build/non-root check, protected-route smoke test, and fail-fast Codecov upload.
 - `postgres-integration`: PostgreSQL migration, locking, and lease-fencing checks.
 - `dependency-audit`: resolved Python dependency audit.
-- `security`: CodeQL analysis.
+- `security`: CodeQL analysis and SARIF publication attempt.
 - `CodeScene Code Health Review (main)`: PR quality gates passed after reducing the `enqueue` hotspot complexity.
 
 Earlier local verification recorded 73 passed and 4 skipped, plus 4 PostgreSQL integration tests passed and an authenticated Doppler development smoke test. These local results are separate from the latest GitHub Actions evidence; do not describe them as freshly rerun locally.
