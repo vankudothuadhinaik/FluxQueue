@@ -79,8 +79,13 @@ def test_failed_job_enters_retry_wait_then_can_be_claimed(session):
     first = claim_next_job(session, "worker-a")
     assert first is not None
     state = fail_job(
-        session, job.id, first["lease_token"], "temporary failure",
-        retry_base_seconds=0, retry_max_seconds=0, jitter=False,
+        session,
+        job.id,
+        first["lease_token"],
+        "temporary failure",
+        retry_base_seconds=0,
+        retry_max_seconds=0,
+        jitter=False,
     )
     assert state == JobStatus.RETRY_WAIT.value
     second = claim_next_job(session, "worker-b")
@@ -111,6 +116,7 @@ def test_priority_zero_is_claimed_before_priority_nine(session):
     assert claimed is not None
     assert claimed["id"] == high.id
     assert session.get(Job, low.id).status == JobStatus.QUEUED.value
+
 
 def test_retry_delay_prevents_early_reclaim(session):
     job = add_job(session, max_attempts=3)
