@@ -246,3 +246,11 @@ def test_run_once_persists_handler_failure_without_logging_payload(monkeypatch, 
         assert "do-not-log-this" not in caplog.text
     finally:
         engine.dispose()
+
+
+@pytest.mark.parametrize("value", [float("nan"), float("inf"), float("-inf"), True])
+def test_add_numbers_rejects_non_finite_values_and_booleans(value):
+    from fluxqueue.worker import HANDLERS
+
+    with pytest.raises(ValueError, match="finite numbers"):
+        HANDLERS["add_numbers"]({"numbers": [1, value]})
