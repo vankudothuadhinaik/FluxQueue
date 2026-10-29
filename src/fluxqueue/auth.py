@@ -23,7 +23,7 @@ def require_api_key(authorization: str | None = Header(default=None)) -> str:
         )
 
     for candidate, tenant_id in settings.api_keys.items():
-        if compare_digest(provided, candidate):
+        if tenant_id and len(tenant_id) <= 128 and compare_digest(provided, candidate):
             return tenant_id
 
     expected = settings.api_key
