@@ -13,7 +13,7 @@ flowchart LR
   API --> Ops[Health and OpenAPI]
 ```
 
-The API supports enqueue with a 64 KiB serialized-payload limit, retrieval, filtering, pagination, queue counts, cancellation of queued/retry-wait jobs, liveness, and readiness. A shared bearer API key can protect job/queue routes. The worker currently registers `echo`, `add_numbers`, and `uppercase`; unknown task names fail through the retry/dead-letter lifecycle rather than being dynamically imported or executed.
+The API supports enqueue with a 64 KiB serialized-payload limit, retrieval, filtering, pagination, queue counts, cancellation of queued/retry-wait jobs, liveness, and readiness. Bearer API keys resolve to a tenant identity. The legacy `API_KEY` maps to the `default` tenant; multi-tenant deployments use `API_KEYS`, a JSON mapping from secrets to tenant IDs. The worker currently registers `echo`, `add_numbers`, and `uppercase`; unknown task names fail through the retry/dead-letter lifecycle rather than being dynamically imported or executed.
 
 ## Claim and lease protocol
 
@@ -29,4 +29,4 @@ Failures are stored as bounded error text. Jobs below their attempt limit transi
 
 Alembic applies the initial worker lease migration. The migration can add lease/scheduling fields to an existing `jobs` table and creates the full current schema for a fresh database. Docker Compose starts PostgreSQL, runs migrations before API startup, and starts the worker after API readiness.
 
-A shared bearer API key protects job/queue routes when configured, and production settings fail closed without one. Per-tenant authorization, per-user identities, rate limiting, process-kill/database-outage fault injection, and full public deployment hardening are still missing. CI includes PostgreSQL integration checks for `SKIP LOCKED`, concurrent claims, lease reclamation, and stale-token fencing; these checks must pass on the latest run before release. The current API must not be exposed publicly until those are addressed.
+Job retrieval, listing, cancellation, queue aggregates, and idempotency lookups are filtered by the authenticated tenant. Migration `0002_tenant_isolation` backfills existing jobs to `default` and scopes the uniqueness constraint by tenant, queue, and idempotency key. Production settings fail closed unless `API_KEY` or `API_KEYS` is configured. Per-user identities, rate limiting, per-tenant quotas, process-kill/database-outage fault injection, and full public deployment hardening are still missing. CI includes PostgreSQL integration checks for `SKIP LOCKED`, concurrent claims, lease reclamation, and stale-token fencing; these checks must pass on the latest run before release. The current API must not be exposed publicly until those are addressed.
