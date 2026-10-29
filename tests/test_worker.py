@@ -254,3 +254,10 @@ def test_add_numbers_rejects_non_finite_values_and_booleans(value):
 
     with pytest.raises(ValueError, match="finite numbers"):
         HANDLERS["add_numbers"]({"numbers": [1, value]})
+
+
+def test_add_numbers_rejects_overflowed_sum():
+    from fluxqueue.worker import HANDLERS
+
+    with pytest.raises(ValueError, match="sum must be finite"):
+        HANDLERS["add_numbers"]({"numbers": [1e308, 1e308]})
