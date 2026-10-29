@@ -106,9 +106,9 @@ Copilot and Codex are development assistants, not runtime dependencies. Keep the
 
 ## Current integration status
 
-- GitHub Actions: final PR CI run [40934791341](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40934791341) passed all jobs on commit `dcde57b`.
-- CodeQL and Python dependency audit: passed in the final run; CodeQL SARIF publication succeeded.
-- Codecov: **PASS** in [run 40934791341](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40934791341) after repository token rotation and secret update.
-- Doppler: an authenticated local CLI check confirmed project `fluxqueue`, config `dev`, and secret injection; CI validates service wiring without requiring a Doppler token.
-- CodeScene: PR integration is active; the final review on PR #17 passed ([CodeScene check](https://github.com/vankudothuadhinaik/FluxQueue/runs/123662321543), [analysis result](https://codescene.io/projects/87037/delta/results/8195097)).
-- Render/other deployment: no production service is created by these files. Deploying a public service requires a deliberate environment, database, and cost decision.
+- GitHub Actions: latest verified PR CI run [40936739361](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40936739361) passed all four jobs on commit `78f89b0`.
+- CodeQL and Python dependency audit: passed in that run; CodeQL analysis and SARIF publication completed.
+- Codecov: coverage upload passed in the test job on the same run after the owner rotated the repository upload token and updated the Actions secret. Confirm revocation of any previously exposed token in provider settings; a successful replacement upload alone does not prove revocation.
+- Doppler: a previously reported authenticated local CLI check confirmed project `fluxqueue`, config `dev`, and secret injection; CI validates service wiring without requiring a Doppler token. This is historical local evidence, not a fresh CLI run during the documentation closeout.
+- CodeScene: the PR integration check and review passed on the closeout changes ([CodeScene check](https://github.com/vankudothuadhinaik/FluxQueue/runs/123662321543), [analysis result](https://codescene.io/projects/87037/delta/results/8195097)).
+- Render/other deployment: no FluxQueue staging or production service was created. A deployment still requires an explicit environment, dedicated database, and cost decision.
