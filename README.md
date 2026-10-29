@@ -54,6 +54,29 @@ ruff format --check .
 
 Run the API with `uvicorn fluxqueue.main:app --reload` and the worker in a separate terminal with `python -m fluxqueue.worker`.
 
+## Testing
+
+The default test suite uses isolated SQLite databases for fast API and worker-state checks:
+
+```bash
+pytest
+ruff check .
+ruff format --check .
+```
+
+The PostgreSQL-only integration tests verify real row-lock skipping, simultaneous worker claims,
+expired lease reclamation, and stale-token fencing. They are run automatically by the
+`postgres-integration` GitHub Actions job against a disposable PostgreSQL 16 service. To run
+them locally, start a disposable PostgreSQL database and set
+`FLUXQUEUE_POSTGRES_TEST_URL=postgresql+psycopg://USER:PASSWORD@HOST:5432/DATABASE`, then run:
+
+```bash
+pytest -q tests/test_postgres_integration.py
+```
+
+Do not point these integration tests at a database containing data you need to keep: the fixture
+creates and drops the FluxQueue tables.
+
 ## Reliability boundaries
 
 The worker uses lease tokens to fence stale completion/failure writes and renews leases while a handler runs. Expired claims can be reclaimed. Execution is at-least-once: an external side effect may occur before a worker crashes and acknowledges it, so side-effecting handlers must be idempotent. SQLite is useful for local development; use PostgreSQL for multi-worker deployments and concurrency behavior.
