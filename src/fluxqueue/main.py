@@ -30,7 +30,7 @@ def ready(session: Session = Depends(get_session)) -> dict[str, str]:
 @app.post("/api/v1/jobs", response_model=JobRead, status_code=202, tags=["jobs"])
 def create_job(
     data: JobCreate,
-    idempotency_key: str | None = Header(default=None, alias="Idempotency-Key", max_length=255),
+    idempotency_key: str | None = Header(default=None, alias="Idempotency-Key", min_length=1, max_length=255),
     session: Session = Depends(get_session),
 ) -> JobRead:
     return JobRead.model_validate(enqueue(session, data, idempotency_key))
