@@ -37,12 +37,7 @@ class FluxQueueClient:
             raise ValueError("base_url must contain a valid port") from exc
         if port is not None and not 1 <= port <= 65535:
             raise ValueError("base_url must contain a valid port")
-        if (
-            parsed_url.username
-            or parsed_url.password
-            or parsed_url.query
-            or parsed_url.fragment
-        ):
+        if parsed_url.username or parsed_url.password or parsed_url.query or parsed_url.fragment:
             raise ValueError("base_url must not contain credentials, query, or fragment")
         local_hosts = {"localhost", "127.0.0.1", "::1"}
         if parsed_url.scheme != "https" and parsed_url.hostname not in local_hosts:
@@ -87,13 +82,9 @@ class FluxQueueClient:
         except json.JSONDecodeError as exc:
             raise FluxQueueError("FluxQueue API returned invalid JSON") from exc
 
-    def submit(
-        self, job: dict[str, Any], *, idempotency_key: str | None = None
-    ) -> dict[str, Any]:
+    def submit(self, job: dict[str, Any], *, idempotency_key: str | None = None) -> dict[str, Any]:
         """Submit a job and return the API response."""
-        return self._request(
-            "POST", "/api/v1/jobs", body=job, idempotency_key=idempotency_key
-        )
+        return self._request("POST", "/api/v1/jobs", body=job, idempotency_key=idempotency_key)
 
     def get_job(self, job_id: str) -> dict[str, Any]:
         """Fetch a job by ID."""
