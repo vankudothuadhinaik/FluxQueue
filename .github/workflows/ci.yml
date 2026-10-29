@@ -1,5 +1,9 @@
 name: CI
 
+concurrency:
+  group: fluxqueue-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
     branches: [main, "work/**"]
@@ -41,6 +45,7 @@ jobs:
   security:
     runs-on: ubuntu-latest
     permissions:
+      actions: read
       contents: read
       security-events: write
     steps:
