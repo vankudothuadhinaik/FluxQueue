@@ -5,7 +5,7 @@
 
 A durable job-processing platform built with FastAPI, SQLAlchemy, and PostgreSQL.
 
-> **Current status (2026-10-30):** Docker-first local staging passed, and final CI for PR #17 passed at [run 40935078574](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40935078574), head `3d848ea`. Test, Codecov, PostgreSQL integration, dependency audit, CodeQL, and CodeScene all passed. The PR remains open and unmerged while production-readiness gates below are verified; CI success alone does not establish production readiness.
+> **Current status (2026-10-30):** Docker-first local staging passed, and CI for PR #17 passed at [run 40936739361](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40936739361), head `78f89b0`. Test, PostgreSQL integration, dependency audit, and security jobs passed; Codecov upload is included in the test job. The PR remains open and unmerged. These results do not establish production readiness.
 
 ## Current capabilities
 
@@ -171,31 +171,30 @@ Codecov upload activates when the repository Actions secret `CODECOV_TOKEN` is c
 
 ## CI status and latest verification
 
-CI runs on pushes, pull requests, and a weekly schedule. The latest verified run for PR #17 is [40934791341](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40934791341), associated with commit `dcde57b`. Test, Codecov, PostgreSQL integration, dependency audit, CodeQL publication, and CodeScene all passed:
+The latest verified CI run for PR #17 is [40936739361](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40936739361), for commit `78f89b0` on `feat/doppler-integration`. All four jobs passed:
 
-- `test`: compilation, fresh/upgrade migration checks, Ruff, unit/API tests, Compose and Doppler wiring validation, container build/non-root check, protected-route smoke test, and fail-fast Codecov upload.
+- `test`: compilation, migration checks, Ruff, unit/API tests, Compose and Doppler wiring validation, Docker build, non-root check, container smoke test, and Codecov upload.
 - `postgres-integration`: PostgreSQL migration, locking, and lease-fencing checks.
 - `dependency-audit`: resolved Python dependency audit.
-- `security`: CodeQL analysis and SARIF publication attempt.
-- `CodeScene Code Health Review (main)`: PR quality gates passed after reducing the `enqueue` hotspot complexity.
+- `security`: CodeQL analysis and SARIF publication.
 
-Earlier local verification recorded 73 passed and 4 skipped, plus 4 PostgreSQL integration tests passed and an authenticated Doppler development smoke test. These local results are separate from the latest GitHub Actions evidence; do not describe them as freshly rerun locally.
+The Docker-first local staging run and its detailed checks are recorded above and in [developer tooling and integrations](docs/integrations.md). Earlier local verification recorded 73 passed and 4 skipped, plus 4 PostgreSQL integration tests passed; those local results are historical and are not claimed as freshly rerun during the final documentation update.
 
 ## Production readiness: still outstanding
 
-**Do not treat this repository as production-ready solely because CI passes.** The following have not been verified against a real production-like deployment:
+**CI and local Docker success do not make FluxQueue production-ready.** The following deployment-owner gates remain open:
 
-- Revoke/rotate the previously exposed Codecov credential, update the GitHub Actions secret, and confirm the replacement works.
+- Confirm Codecov credential rotation/revocation in provider settings; the replacement upload succeeded in CI, but secret values cannot be read back through GitHub.
 - Validate Nginx syntax, certificates, TLS negotiation, and proxy behavior in an authorized disposable environment. The example is a starting point; `limit_req_zone` belongs in the Nginx `http {}` context.
 - Verify managed PostgreSQL TLS, network restrictions, least-privilege credentials, backup restoration, and migration rollback against production-like data.
 - Exercise database outages, worker termination during handlers, lease expiry, retry exhaustion, and restart recovery.
 - Verify idempotency for every external side-effecting handler.
-- Add/verify operational metrics, structured logs, alerts, on-call ownership, resource limits, log retention, and rollback procedures.
+- Configure and verify operational metrics, structured logs, alerts, on-call ownership, resource limits, log retention, and rollback procedures.
 - Run controlled load and soak tests; record throughput, latency percentiles, worker concurrency, and database utilization.
 - Implement and test API-key rotation/revocation workflow; self-service key management is not implemented.
 
-Track and record evidence in [deployment readiness](docs/deployment-readiness.md). The PR remains open and unmerged pending owner decisions and release gates.
-
+Track evidence in [deployment readiness](docs/deployment-readiness.md). No cloud staging environment has been provisioned, and PR #17 remains open and unmerged.
+  
 ## License
 
 MIT — see [LICENSE](LICENSE).
