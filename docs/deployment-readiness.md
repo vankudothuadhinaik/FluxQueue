@@ -32,6 +32,6 @@ Record links to the exact commit, CI run, migration validation, PostgreSQL integ
 
 ## Current limitations
 
-- API keys map to tenant IDs when `API_KEYS` is configured. The legacy `API_KEY` maps to the `default` tenant and is not suitable for multi-tenant isolation. Individual user identities and self-service key rotation are not implemented.
+- API keys map to tenant IDs when `API_KEYS` is configured; this mapping takes precedence over the legacy `API_KEY`. The legacy key maps to `default` and is for single-tenant use only. Individual user identities and self-service key rotation are not implemented.
 - Job execution is at-least-once. A worker can perform an external side effect and crash before acknowledging success.
 - The repository's CI smoke test checks container startup, health endpoints, and protected-route authentication. It does not validate a real reverse proxy, TLS termination, production secret manager, backup restoration, or production traffic.
