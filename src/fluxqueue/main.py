@@ -23,9 +23,7 @@ app = FastAPI(
 
 
 @app.middleware("http")
-async def add_security_headers(
-    request: Request, call_next: RequestResponseEndpoint
-) -> Response:
+async def add_security_headers(request: Request, call_next: RequestResponseEndpoint) -> Response:
     """Set baseline browser-facing headers; configure HSTS at the TLS proxy."""
     response = await call_next(request)
     response.headers.setdefault("X-Content-Type-Options", "nosniff")
