@@ -10,9 +10,11 @@ JUnit test results and coverage XML are uploaded as workflow artifacts when avai
 
 ## Codecov
 
-The repository includes `.codecov.yml`. CI uploads `coverage.xml` only when the GitHub Actions repository secret `CODECOV_TOKEN` exists. Without the secret, the upload step is skipped and CI still runs normally.
+The repository includes `.codecov.yml` and generates `coverage.xml` in GitHub Actions. The workflow uses the official Codecov Action with GitHub OIDC (`use_oidc: true`) and grants the test job only the `id-token: write` permission needed for that authentication flow. This avoids storing a long-lived `CODECOV_TOKEN` secret in GitHub.
 
-Set the secret once in the repository's Actions secrets, using the token from the FluxQueue Codecov project. Never commit the token or paste it into source files. Official guidance: https://docs.codecov.com/docs/codecov-tokens
+The latest upload attempt successfully obtained an OIDC token and verified the Codecov uploader, but Codecov rejected the upload with `Repository not found`. This means the upload pipeline is wired, but the repository still needs to be enabled/connected in the Codecov account and the Codecov GitHub App must have access to this private repository. Open the [FluxQueue Codecov project](https://app.codecov.io/gh/vankudothuadhinaik/FluxQueue) while signed in with the GitHub account that owns the repository, and complete repository setup / GitHub App access if prompted. Then rerun the latest workflow to verify that coverage is accepted.
+
+The upload remains non-blocking until Codecov confirms the repository is configured. Never commit a Codecov token or put credentials in source files. Official guidance: https://github.com/codecov/codecov-action#using-oidc
 
 ## Doppler
 
