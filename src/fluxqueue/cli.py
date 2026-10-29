@@ -35,9 +35,10 @@ def _parser() -> argparse.ArgumentParser:
     get.add_argument("job_id")
 
     listing = commands.add_parser("list", help="list jobs")
-    listing.add_argument("--status", choices=[
-        "queued", "running", "succeeded", "retry_wait", "dead", "cancelled"
-    ])
+    listing.add_argument(
+        "--status",
+        choices=["queued", "running", "succeeded", "retry_wait", "dead", "cancelled"],
+    )
     listing.add_argument("--queue")
     listing.add_argument("--limit", type=int, default=50)
     listing.add_argument("--offset", type=int, default=0)
@@ -72,7 +73,10 @@ def main(argv: list[str] | None = None) -> int:
             result = client.get_job(args.job_id)
         elif args.command == "list":
             result = client.list_jobs(
-                status=args.status, queue=args.queue, limit=args.limit, offset=args.offset
+                status=args.status,
+                queue=args.queue,
+                limit=args.limit,
+                offset=args.offset,
             )
         elif args.command == "cancel":
             result = client.cancel_job(args.job_id)
