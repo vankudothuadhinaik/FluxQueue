@@ -12,6 +12,7 @@
 - Jobs can be scheduled up to 24 hours ahead and are not eligible for claim until due.
 - Unknown task types fail as normal job errors; only explicitly registered handlers can run.
 - Worker lifecycle logs record claims, outcomes, and stale-lease fencing without emitting job payloads or API keys.
+- Active jobs (queued, running, or waiting for retry) are capped per tenant by `MAX_ACTIVE_JOBS_PER_TENANT`; PostgreSQL advisory transaction locks serialize quota checks across API replicas.
 
 The API/worker tests cover key transitions, but the full suite has not yet been confirmed green in GitHub Actions.
 
@@ -24,5 +25,5 @@ Execution is at-least-once, not exactly-once. A handler can perform an external 
 - SQLite does not provide PostgreSQL's row-level `SKIP LOCKED` semantics; use PostgreSQL for concurrent worker deployments.
 - PostgreSQL CI integration tests exercise row-lock skipping, concurrent claims, lease reclamation, and stale-token fencing. Process termination and database-restart fault injection remain outstanding.
 - Keep migration upgrade/downgrade checks green against fresh and existing schemas (covered by CI migration steps).
-- Rate limiting, per-tenant quotas, key rotation/revocation, production secret handling, and operational controls remain required before public deployment. The serialized payload size cap is implemented and covered by API tests.
+- Distributed request rate limiting, key rotation/revocation, production secret handling, and operational controls remain required before public deployment. The serialized payload size cap is implemented and covered by API tests.
 - Run reproducible throughput/latency tests before making performance claims.
