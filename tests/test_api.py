@@ -262,3 +262,16 @@ def test_tenant_api_key_configuration_rejects_invalid_tenant_ids():
             api_key=None,
             api_keys={"tenant-secret": "../other-tenant"},
         )
+
+
+def test_production_settings_reject_shared_and_tenant_keys_together():
+    from pydantic import ValidationError
+
+    from fluxqueue.config import Settings
+
+    with pytest.raises(ValidationError):
+        Settings(
+            app_env="production",
+            api_key="legacy-secret",
+            api_keys={"tenant-secret": "tenant-a"},
+        )
