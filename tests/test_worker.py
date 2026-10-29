@@ -1,5 +1,7 @@
 """Worker lease and state-transition tests."""
 
+from datetime import UTC, datetime, timedelta
+
 import pytest
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker
@@ -155,3 +157,11 @@ def test_only_registered_task_handlers_are_available():
     assert HANDLERS["uppercase"]({"text": "fluxqueue"}) == {"text": "FLUXQUEUE"}
     with pytest.raises(ValueError):
         HANDLERS["add_numbers"]({"numbers": ["__import__('os')"]})
+
+
+def test_future_scheduled_job_is_not_claimed_early(session):
+    job = add_job(session)
+    job.run_at = datetime.now(UTC) + timedelta(seconds=60)
+    session.commit()
+    assert claim_next_job(session, "worker-a") is None
+    assert session.get(Job, job.id).status == JobStatus.QUEUED.value
