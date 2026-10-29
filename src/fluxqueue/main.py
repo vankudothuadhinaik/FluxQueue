@@ -19,6 +19,23 @@ app = FastAPI(
 )
 
 
+@app.exception_handler(RequestValidationError)
+async def request_validation_error_handler(
+    request, exc: RequestValidationError
+) -> JSONResponse:
+    """Return safe validation details without echoing non-JSON input values."""
+    del request
+    details = [
+        {
+            "loc": list(error.get("loc", ())),
+            "msg": str(error.get("msg", "Invalid request")),
+            "type": str(error.get("type", "value_error")),
+        }
+        for error in exc.errors()
+    ]
+    return JSONResponse(status_code=422, content={"detail": details})
+
+
 @app.get("/health/live", tags=["health"])
 def live() -> dict[str, str]:
     return {"status": "alive"}
