@@ -12,6 +12,8 @@ JUnit test results and coverage XML are uploaded as workflow artifacts when avai
 
 The repository includes `.codecov.yml` and generates `coverage.xml` in GitHub Actions. The workflow uses the official Codecov Action and authenticates with the repository Actions secret `CODECOV_TOKEN`.
 
+**Current verification status: BLOCKED.** The historical upload evidence below predates the current check. The latest protected-branch upload supplied a token but Codecov rejected it as requiring a valid token; replace the secret with the FluxQueue repository token and rerun CI.
+
 The upload was verified in GitHub Actions run [40882641655](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40882641655): Codecov found `coverage.xml`, accepted the 3.6 KB upload, and reported **“Upload queued for processing complete.”** The report was queued for processing and can be viewed at the [Codecov commit report](https://app.codecov.io/github/vankudothuadhinaik/fluxqueue/commit/f5f6d93ee5212900ead0cfd9a79aa100d2ac91c5).
 
 Keep the token only in GitHub Actions secrets; never commit it or paste it into source files, issues, or chat. The repository owner reports that `CODECOV_TOKEN` has been updated in GitHub repository secrets. The test job was rerun on commit `96604cefc04b51d819e0da7faccc2460c570f136`, and the `Upload coverage to Codecov` step completed successfully in run [40923030906](https://github.com/vankudothuadhinaik/FluxQueue/actions/runs/40923030906). This verifies that the configured secret permits the upload; it does not independently prove the old credential was revoked in Codecov, so confirm revocation in the Codecov account if not already done. Official guidance: https://github.com/codecov/codecov-action
