@@ -6,7 +6,7 @@ from datetime import UTC, datetime
 from typing import NamedTuple
 
 from fastapi import HTTPException
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -97,11 +97,23 @@ def list_jobs(
 
 
 def cancel_queued_job(session: Session, job_id: str) -> Job:
-    job = get_job(session, job_id)
-    if job.status not in {JobStatus.QUEUED.value, JobStatus.RETRY_WAIT.value}:
+    now = datetime.now(UTC)
+    result = session.execute(
+        update(Job)
+        .where(
+            Job.id == job_id,
+            Job.status.in_([JobStatus.QUEUED.value, JobStatus.RETRY_WAIT.value]),
+        )
+        .values(
+            status=JobStatus.CANCELLED.value,
+            finished_at=now,
+            updated_at=now,
+            run_at=None,
+        )
+    )
+    if result.rowcount != 1:
+        session.rollback()
+        job = get_job(session, job_id)
         raise HTTPException(status_code=409, detail=f"Cannot cancel job in state '{job.status}'")
-    job.status = JobStatus.CANCELLED.value
-    job.finished_at = datetime.now(UTC)
     session.commit()
-    session.refresh(job)
-    return job
+    return get_job(session, job_id)
