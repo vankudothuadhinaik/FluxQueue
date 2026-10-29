@@ -122,15 +122,18 @@ def test_retry_delay_prevents_early_reclaim(session):
     job = add_job(session, max_attempts=3)
     claimed = claim_next_job(session, "worker-a")
     assert claimed is not None
-    assert fail_job(
-        session,
-        job.id,
-        claimed["lease_token"],
-        "temporary",
-        retry_base_seconds=60,
-        retry_max_seconds=60,
-        jitter=False,
-    ) == JobStatus.RETRY_WAIT.value
+    assert (
+        fail_job(
+            session,
+            job.id,
+            claimed["lease_token"],
+            "temporary",
+            retry_base_seconds=60,
+            retry_max_seconds=60,
+            jitter=False,
+        )
+        == JobStatus.RETRY_WAIT.value
+    )
     assert claim_next_job(session, "worker-b") is None
 
 
