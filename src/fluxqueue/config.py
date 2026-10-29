@@ -14,10 +14,14 @@ class Settings(BaseSettings):
     api_keys: dict[str, str] = Field(default_factory=dict)
 
     @model_validator(mode="after")
-    def require_api_key_in_production(self):
+    def validate_authentication_settings(self):
         is_production = self.app_env.lower() in {"production", "prod"}
         if is_production and not (self.api_key or self.api_keys):
             raise ValueError("API_KEY or API_KEYS must be configured when APP_ENV is production")
+        if any(not key for key in self.api_keys):
+            raise ValueError("API_KEYS must not contain empty API keys")
+        if any(not tenant or len(tenant) > 128 for tenant in self.api_keys.values()):
+            raise ValueError("API_KEYS tenant identifiers must be 1 to 128 characters")
         return self
 
 
