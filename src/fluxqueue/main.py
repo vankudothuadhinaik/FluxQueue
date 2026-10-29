@@ -1,6 +1,8 @@
 """FastAPI service."""
 
 from fastapi import Depends, FastAPI, Header, Query
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
@@ -15,6 +17,21 @@ app = FastAPI(
     description="Durable job submission and operational API.",
     version="0.1.0",
 )
+
+
+@app.exception_handler(RequestValidationError)
+async def request_validation_error_handler(request, exc: RequestValidationError) -> JSONResponse:
+    """Return safe validation details without echoing non-JSON input values."""
+    del request
+    details = [
+        {
+            "loc": list(error.get("loc", ())),
+            "msg": str(error.get("msg", "Invalid request")),
+            "type": str(error.get("type", "value_error")),
+        }
+        for error in exc.errors()
+    ]
+    return JSONResponse(status_code=422, content={"detail": details})
 
 
 @app.get("/health/live", tags=["health"])
