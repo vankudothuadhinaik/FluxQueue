@@ -15,6 +15,7 @@ class JobCreate(BaseModel):
     )
     priority: int = Field(default=5, ge=0, le=9)
     max_attempts: int = Field(default=3, ge=1, le=20)
+    delay_seconds: int = Field(default=0, ge=0, le=86_400)
 
     @field_validator("payload")
     @classmethod
