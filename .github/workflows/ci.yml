@@ -101,7 +101,7 @@ jobs:
             --volume "$cert_dir:/etc/letsencrypt/live/fluxqueue.example.com:ro" \
             nginx:alpine nginx -t
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7
         with:
           files: coverage.xml
           token: ${{ secrets.CODECOV_TOKEN }}
