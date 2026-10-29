@@ -44,7 +44,7 @@ jobs:
         run: pytest --cov=fluxqueue --cov-report=xml --junitxml=junit.xml
       - name: Archive test and coverage reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: fluxqueue-test-reports
           path: |
@@ -123,7 +123,7 @@ jobs:
         run: pytest -q tests/test_postgres_integration.py --junitxml=postgres-junit.xml
       - name: Archive PostgreSQL integration report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: fluxqueue-postgres-integration-report
           path: postgres-junit.xml
@@ -163,7 +163,7 @@ jobs:
           output: results
       - name: Archive CodeQL SARIF results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: fluxqueue-codeql-sarif
           path: results/*.sarif
