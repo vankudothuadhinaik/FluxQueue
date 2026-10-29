@@ -71,20 +71,23 @@ def enqueue(
                 )
             return existing
 
-    active_jobs = session.scalar(
-        select(func.count())
-        .select_from(Job)
-        .where(
-            Job.tenant_id == tenant_id,
-            Job.status.in_(
-                [
-                    JobStatus.QUEUED.value,
-                    JobStatus.RUNNING.value,
-                    JobStatus.RETRY_WAIT.value,
-                ]
-            ),
+    active_jobs = (
+        session.scalar(
+            select(func.count())
+            .select_from(Job)
+            .where(
+                Job.tenant_id == tenant_id,
+                Job.status.in_(
+                    [
+                        JobStatus.QUEUED.value,
+                        JobStatus.RUNNING.value,
+                        JobStatus.RETRY_WAIT.value,
+                    ]
+                ),
+            )
         )
-    ) or 0
+        or 0
+    )
     if active_jobs >= settings.max_active_jobs_per_tenant:
         session.rollback()
         raise HTTPException(
