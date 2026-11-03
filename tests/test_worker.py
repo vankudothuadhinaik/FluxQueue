@@ -262,3 +262,20 @@ def test_add_numbers_rejects_overflowed_sum():
 
     with pytest.raises(ValueError, match="sum must be finite"):
         HANDLERS["add_numbers"]({"numbers": [1e308, 1e308]})
+
+
+
+def test_expired_lease_cannot_renew_complete_or_fail_before_reclaim(session):
+    job = add_job(session, max_attempts=3)
+    claimed = claim_next_job(session, "worker-a", lease_seconds=-1)
+    assert claimed is not None
+
+    assert renew_lease(session, job.id, claimed["lease_token"], lease_seconds=30) is False
+    assert complete_job(session, job.id, claimed["lease_token"], {"late": True}) is False
+    assert fail_job(session, job.id, claimed["lease_token"], "late failure") is None
+
+    stored = session.get(Job, job.id)
+    assert stored is not None
+    assert stored.status == JobStatus.RUNNING.value
+    assert stored.lease_token == claimed["lease_token"]
+    assert stored.lease_expires_at <= datetime.now(UTC)
