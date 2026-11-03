@@ -277,4 +277,8 @@ def test_expired_lease_cannot_renew_complete_or_fail_before_reclaim(session):
     assert stored is not None
     assert stored.status == JobStatus.RUNNING.value
     assert stored.lease_token == claimed["lease_token"]
-    assert stored.lease_expires_at <= datetime.now(UTC)
+    assert stored.lease_expires_at is not None
+    expires_at = stored.lease_expires_at
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=UTC)
+    assert expires_at <= datetime.now(UTC)
