@@ -28,7 +28,6 @@ _HANDLER_EXECUTION_SLOTS = BoundedSemaphore(MAX_CONCURRENT_HANDLER_THREADS)
 logger = logging.getLogger(__name__)
 
 
-
 def claim_next_job(
     session: Session,
     worker_id: str,
@@ -377,6 +376,7 @@ def run_once(
         if not slot_transferred:
             _HANDLER_EXECUTION_SLOTS.release()
     return True
+
 
 class _HealthHandler(BaseHTTPRequestHandler):
     """Minimal health endpoints so a worker can run on a web-service free tier."""
