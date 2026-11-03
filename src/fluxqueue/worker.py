@@ -94,6 +94,8 @@ def renew_lease(session: Session, job_id: str, token: str, *, lease_seconds: int
             Job.id == job_id,
             Job.status == JobStatus.RUNNING.value,
             Job.lease_token == token,
+            Job.lease_expires_at.is_not(None),
+            Job.lease_expires_at > now,
         )
         .values(lease_expires_at=now + timedelta(seconds=lease_seconds), updated_at=now)
     )
@@ -110,6 +112,8 @@ def complete_job(session: Session, job_id: str, token: str, result_json: dict[st
             Job.id == job_id,
             Job.status == JobStatus.RUNNING.value,
             Job.lease_token == token,
+            Job.lease_expires_at.is_not(None),
+            Job.lease_expires_at > now,
         )
         .values(
             status=JobStatus.SUCCEEDED.value,
@@ -144,6 +148,8 @@ def fail_job(
             Job.id == job_id,
             Job.status == JobStatus.RUNNING.value,
             Job.lease_token == token,
+            Job.lease_expires_at.is_not(None),
+            Job.lease_expires_at > datetime.now(UTC),
         )
         .with_for_update()
     )
@@ -175,6 +181,8 @@ def fail_job(
             Job.id == job_id,
             Job.status == JobStatus.RUNNING.value,
             Job.lease_token == token,
+            Job.lease_expires_at.is_not(None),
+            Job.lease_expires_at > now,
         )
         .values(
             status=state,
