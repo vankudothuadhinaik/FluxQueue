@@ -28,9 +28,6 @@ _HANDLER_EXECUTION_SLOTS = BoundedSemaphore(MAX_CONCURRENT_HANDLER_THREADS)
 logger = logging.getLogger(__name__)
 
 
-class HandlerExecutionTimeout(TimeoutError):
-    """A handler exceeded its execution deadline; its lease is left to expire."""
-
 
 def claim_next_job(
     session: Session,
