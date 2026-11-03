@@ -69,6 +69,18 @@ docker compose -p fluxqueue-staging ps
 
 Verify liveness/readiness, protected-route responses, a harmless authenticated job, `/metrics`, worker logs, and restart recovery. Stop only this isolated project with `docker compose -p fluxqueue-staging down`; this preserves the disposable `fluxqueue-staging_postgres_data` volume. The image excludes tests, docs, local environments, caches, and Git metadata through `.dockerignore` and runs as UID/GID `10001:10001`.
 
+## Technology and tooling
+
+| Layer | Technology |
+|---|---|
+| API | Python 3.12+, FastAPI, Pydantic |
+| Persistence | SQLAlchemy, PostgreSQL, Alembic |
+| Worker | Leased background workers, registered handlers, bounded retry |
+| Client | Synchronous Python SDK and CLI |
+| Runtime | Docker, Docker Compose |
+| Operations | Doppler-backed configuration, Nginx edge-policy example |
+| Quality and security | Pytest, Ruff, CodeQL, dependency audit, GitHub Actions, optional Codecov |
+
 ## API
 
 - `POST /api/v1/jobs`
