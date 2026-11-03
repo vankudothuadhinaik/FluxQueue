@@ -264,7 +264,6 @@ def test_add_numbers_rejects_overflowed_sum():
         HANDLERS["add_numbers"]({"numbers": [1e308, 1e308]})
 
 
-
 def test_expired_lease_cannot_renew_complete_or_fail_before_reclaim(session):
     job = add_job(session, max_attempts=3)
     claimed = claim_next_job(session, "worker-a", lease_seconds=-1)
