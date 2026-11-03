@@ -97,6 +97,7 @@ def renew_lease(session: Session, job_id: str, token: str, *, lease_seconds: int
             Job.lease_expires_at.is_not(None),
             Job.lease_expires_at > now,
         )
+        .execution_options(synchronize_session=False)
         .values(lease_expires_at=now + timedelta(seconds=lease_seconds), updated_at=now)
     )
     session.commit()
@@ -115,6 +116,7 @@ def complete_job(session: Session, job_id: str, token: str, result_json: dict[st
             Job.lease_expires_at.is_not(None),
             Job.lease_expires_at > now,
         )
+        .execution_options(synchronize_session=False)
         .values(
             status=JobStatus.SUCCEEDED.value,
             result_json=result_json,
@@ -184,6 +186,7 @@ def fail_job(
             Job.lease_expires_at.is_not(None),
             Job.lease_expires_at > now,
         )
+        .execution_options(synchronize_session=False)
         .values(
             status=state,
             last_error=error_text,
