@@ -97,7 +97,7 @@ def renew_lease(session: Session, job_id: str, token: str, *, lease_seconds: int
             Job.lease_expires_at.is_not(None),
             Job.lease_expires_at > now,
         )
-        .execution_options(synchronize_session=False)
+        .execution_options(synchronize_session="fetch")
         .values(lease_expires_at=now + timedelta(seconds=lease_seconds), updated_at=now)
     )
     session.commit()
@@ -116,7 +116,7 @@ def complete_job(session: Session, job_id: str, token: str, result_json: dict[st
             Job.lease_expires_at.is_not(None),
             Job.lease_expires_at > now,
         )
-        .execution_options(synchronize_session=False)
+        .execution_options(synchronize_session="fetch")
         .values(
             status=JobStatus.SUCCEEDED.value,
             result_json=result_json,
@@ -144,6 +144,7 @@ def fail_job(
     jitter: bool = True,
 ) -> str | None:
     """Record failure with bounded retry; a stale token cannot change the job."""
+    now = datetime.now(UTC)
     job = session.scalar(
         select(Job)
         .where(
@@ -151,15 +152,13 @@ def fail_job(
             Job.status == JobStatus.RUNNING.value,
             Job.lease_token == token,
             Job.lease_expires_at.is_not(None),
-            Job.lease_expires_at > datetime.now(UTC),
+            Job.lease_expires_at > now,
         )
         .with_for_update()
     )
     if job is None:
         session.rollback()
         return None
-
-    now = datetime.now(UTC)
     error_text = error[:2000]
     if job.attempt_count >= job.max_attempts:
         state = JobStatus.DEAD.value
@@ -186,7 +185,7 @@ def fail_job(
             Job.lease_expires_at.is_not(None),
             Job.lease_expires_at > now,
         )
-        .execution_options(synchronize_session=False)
+        .execution_options(synchronize_session="fetch")
         .values(
             status=state,
             last_error=error_text,
