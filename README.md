@@ -13,7 +13,7 @@ A durable job-processing platform built with FastAPI, SQLAlchemy, and PostgreSQL
 - Tenant-scoped API keys and tenant-isolated job reads, listings, cancellation, queue counts, and idempotency keys. When `API_KEYS` is non-empty, it takes precedence over the legacy single-tenant `API_KEY`.
 - Job retrieval, filtering, pagination, queue counts, and cancellation.
 - Separate worker process with registered handlers: `echo`, `add_numbers`, and `uppercase`.
-- Lease expiry/reclaim, heartbeat renewal, stale-token fencing, bounded exponential retry, terminal `dead` state, and payload-free worker lifecycle logs.
+- Lease expiry/reclaim, heartbeat renewal, stale-token fencing, bounded exponential retry, terminal `dead` state, and payload-free worker lifecycle logs. Handler waiting is bounded to 30 seconds by default, with at most eight active handler threads per worker process; Python cannot safely force-cancel a timed-out thread, so it may continue running after its lease is allowed to expire. Side-effecting handlers must be idempotent.
 - Non-root API/worker container, baseline security response headers, loopback-bound local Compose ports, Alembic migrations, SQLite unit/API tests, PostgreSQL concurrency integration tests, container startup/auth smoke checks, low-cardinality `/metrics`, Ruff, CodeQL, automated dependency auditing, Dependabot, and optional Codecov.
 - Doppler-to-Compose environment validation, secret-safe diagnostics, and URL-encoded PostgreSQL credentials.
 - Example Nginx edge policy with explicit TLS 1.2/1.3 defaults, disabled server tokens, request-size limits, and per-IP API rate limiting.
