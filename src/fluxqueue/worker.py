@@ -3,12 +3,13 @@
 import logging
 import math
 import os
+import queue
 import random
 import socket
 import time
 from datetime import UTC, datetime, timedelta
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from threading import Event, Thread
+from threading import BoundedSemaphore, Event, Thread
 from typing import Any
 from uuid import uuid4
 
@@ -20,7 +21,10 @@ from fluxqueue.metrics import increment, observe_processing
 from fluxqueue.models import Job, JobStatus
 
 DEFAULT_LEASE_SECONDS = 60
+DEFAULT_HANDLER_TIMEOUT_SECONDS = 30.0
+MAX_CONCURRENT_HANDLER_THREADS = 8
 MAX_RETRY_DELAY_SECONDS = 300
+_HANDLER_EXECUTION_SLOTS = BoundedSemaphore(MAX_CONCURRENT_HANDLER_THREADS)
 logger = logging.getLogger(__name__)
 
 
@@ -254,34 +258,83 @@ def _heartbeat(job_id: str, token: str, stop: Event, lease_seconds: int) -> None
             logger.warning("Lease heartbeat failed for job %s; retrying", job_id)
 
 
-def run_once(*, worker_id: str, lease_seconds: int = DEFAULT_LEASE_SECONDS) -> bool:
-    """Claim and execute at most one job. Returns whether a job was claimed."""
-    with SessionLocal() as session:
-        job = claim_next_job(session, worker_id, lease_seconds=lease_seconds)
-    if job is None:
+def run_once(
+    *,
+    worker_id: str,
+    lease_seconds: int = DEFAULT_LEASE_SECONDS,
+    handler_timeout_seconds: float = DEFAULT_HANDLER_TIMEOUT_SECONDS,
+) -> bool:
+    """Claim and execute at most one job with bounded handler waiting."""
+    if handler_timeout_seconds <= 0:
+        raise ValueError("handler_timeout_seconds must be positive")
+    if not _HANDLER_EXECUTION_SLOTS.acquire(blocking=False):
         return False
 
-    logger.info(
-        "Claimed job %s (attempt %s of %s)",
-        job["id"],
-        job["attempt_count"],
-        job["max_attempts"],
-    )
+    slot_transferred = False
+    heartbeat_started = False
     stop = Event()
-    heartbeat = Thread(
-        target=_heartbeat,
-        args=(job["id"], job["lease_token"], stop, lease_seconds),
-        daemon=True,
-    )
-    heartbeat.start()
+    heartbeat: Thread | None = None
+    job: dict[str, Any] | None = None
     started = time.monotonic()
     try:
+        with SessionLocal() as session:
+            job = claim_next_job(session, worker_id, lease_seconds=lease_seconds)
+        if job is None:
+            return False
+
+        logger.info(
+            "Claimed job %s (attempt %s of %s)",
+            job["id"],
+            job["attempt_count"],
+            job["max_attempts"],
+        )
         handler = HANDLERS.get(job["task_type"])
         if handler is None:
             raise ValueError(f"Unregistered task type: {job['task_type']}")
-        result = handler(job["payload"])
+
+        heartbeat = Thread(
+            target=_heartbeat,
+            args=(job["id"], job["lease_token"], stop, lease_seconds),
+            daemon=True,
+        )
+        heartbeat.start()
+        heartbeat_started = True
+        started = time.monotonic()
+        outcome: queue.Queue[tuple[bool, Any]] = queue.Queue(maxsize=1)
+
+        def execute_handler() -> None:
+            try:
+                outcome.put((True, handler(job["payload"])))
+            except Exception as exc:
+                outcome.put((False, exc))
+            finally:
+                # A timed-out thread retains its slot until it actually exits.
+                _HANDLER_EXECUTION_SLOTS.release()
+
+        execution = Thread(
+            target=execute_handler,
+            name=f"fluxqueue-handler-{job['id']}",
+            daemon=True,
+        )
+        execution.start()
+        slot_transferred = True
+        try:
+            succeeded, value = outcome.get(timeout=handler_timeout_seconds)
+        except queue.Empty:
+            # Do not acknowledge or retry while the handler may still be running.
+            # Stop renewing the lease so another worker can reclaim it after expiry.
+            logger.warning(
+                "Job %s exceeded the %.2fs handler deadline; lease will expire for recovery",
+                job["id"],
+                handler_timeout_seconds,
+            )
+            return True
+
+        if not succeeded:
+            raise value
+
         with SessionLocal() as session:
-            completed = complete_job(session, job["id"], job["lease_token"], result)
+            completed = complete_job(session, job["id"], job["lease_token"], value)
         if completed:
             increment("jobs_completed")
             observe_processing(time.monotonic() - started)
@@ -292,6 +345,8 @@ def run_once(*, worker_id: str, lease_seconds: int = DEFAULT_LEASE_SECONDS) -> b
                 job["id"],
             )
     except Exception as exc:  # Task exceptions are persisted as job failures.
+        if job is None:
+            raise
         with SessionLocal() as session:
             state = fail_job(
                 session,
@@ -315,8 +370,11 @@ def run_once(*, worker_id: str, lease_seconds: int = DEFAULT_LEASE_SECONDS) -> b
                 job["id"],
             )
     finally:
-        stop.set()
-        heartbeat.join(timeout=2)
+        if heartbeat_started and heartbeat is not None:
+            stop.set()
+            heartbeat.join(timeout=2)
+        if not slot_transferred:
+            _HANDLER_EXECUTION_SLOTS.release()
     return True
 
 

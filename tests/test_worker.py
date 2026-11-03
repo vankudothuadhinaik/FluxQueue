@@ -282,3 +282,64 @@ def test_expired_lease_cannot_renew_complete_or_fail_before_reclaim(session):
     if expires_at.tzinfo is None:
         expires_at = expires_at.replace(tzinfo=UTC)
     assert expires_at <= datetime.now(UTC)
+
+
+def test_run_once_times_out_hung_handler_and_allows_lease_recovery(monkeypatch):
+    import threading
+    import time
+
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+    from sqlalchemy.pool import StaticPool
+
+    from fluxqueue import worker
+
+    engine = create_engine(
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(bind=engine)
+    factory = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
+    monkeypatch.setattr(worker, "SessionLocal", factory)
+    release_handler = threading.Event()
+    handler_finished = threading.Event()
+
+    def hung_handler(_payload):
+        release_handler.wait(timeout=5)
+        handler_finished.set()
+        return {"late": True}
+
+    monkeypatch.setitem(worker.HANDLERS, "hung_for_test", hung_handler)
+    with factory() as db:
+        job = Job(task_type="hung_for_test", payload={}, max_attempts=3)
+        db.add(job)
+        db.commit()
+        job_id = job.id
+
+    try:
+        started = time.monotonic()
+        assert worker.run_once(
+            worker_id="timeout-worker",
+            lease_seconds=0.05,
+            handler_timeout_seconds=0.01,
+        )
+        assert time.monotonic() - started < 1
+        with factory() as db:
+            stored = db.get(Job, job_id)
+            assert stored is not None
+            assert stored.status == JobStatus.RUNNING.value
+            assert stored.lease_token is not None
+            first_token = stored.lease_token
+
+        time.sleep(0.07)
+        with factory() as db:
+            reclaimed = worker.claim_next_job(db, "recovery-worker", lease_seconds=30)
+            assert reclaimed is not None
+            assert reclaimed["id"] == job_id
+            assert reclaimed["lease_token"] != first_token
+        release_handler.set()
+        assert handler_finished.wait(timeout=1)
+    finally:
+        release_handler.set()
+        engine.dispose()
